@@ -15,8 +15,10 @@
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.80",
     "@tailwindcss/vite": "^4.1.18",
+    "idb": "^8.0.0",
     "tailwindcss": "^4.1.18",
-    "vue": "^3.5.26"
+    "vue": "^3.5.26",
+    "vue-router": "^4.5.0"
   },
   "devDependencies": {
     "@vite-pwa/assets-generator": "^1.0.2",
