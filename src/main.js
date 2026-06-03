@@ -12,6 +12,7 @@ import OutboundForm from './pages/OutboundForm.vue'
 import ProcessForm from './pages/ProcessForm.vue'
 import Inventory from './pages/Inventory.vue'
 import PurchaseForm from './pages/PurchaseForm.vue'
+import SalesForm from './pages/SalesForm.vue'
 
 const router = createRouter({
   // Hash history works without a server (good for GitHub Pages & PWA)
@@ -25,6 +26,7 @@ const router = createRouter({
     { path: '/process',       component: ProcessForm },
     { path: '/inventory',     component: Inventory },
     { path: '/purchase', component: PurchaseForm },
+    { path: '/sales', component: SalesForm },
   ],
 })
 

@@ -68,6 +68,14 @@ onMounted(async () => {
           </div>
           <i class="ti ti-chevron-right" style="font-size:16px;color:var(--text3)" />
         </div>
+        <div class="menu-item" @click="router.push('/sales')">
+          <div class="menu-icon icon-purple"><i class="ti ti-clipboard-plus" /></div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:500">下销售单</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:1px">公司端录入出库订单</div>
+          </div>
+          <i class="ti ti-chevron-right" style="font-size:16px;color:var(--text3)" />
+        </div>
       </div>
 
       <!-- 分装加工 -->
