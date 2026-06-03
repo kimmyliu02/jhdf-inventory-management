@@ -1,0 +1,30 @@
+{
+  "name": "info4340-project",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "cross-env DEPLOY=github vite build",
+    "preview": "vite preview",
+    "publish-pwa": "gh-pages -t -d dist"
+  },
+  "dependencies": {
+    "@mlc-ai/web-llm": "^0.2.80",
+    "@tailwindcss/vite": "^4.1.18",
+    "tailwindcss": "^4.1.18",
+    "vue": "^3.5.26"
+  },
+  "devDependencies": {
+    "@vite-pwa/assets-generator": "^1.0.2",
+    "@vitejs/plugin-vue": "^6.0.3",
+    "cross-env": "^10.1.0",
+    "gh-pages": "^6.3.0",
+    "vite": "^7.3.0",
+    "vite-plugin-pwa": "^1.2.0",
+    "vite-plugin-vue-devtools": "^8.0.5"
+  }
+}
