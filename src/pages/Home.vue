@@ -60,6 +60,14 @@ onMounted(async () => {
           <span v-if="pendingOut > 0" class="badge badge-purple">{{ pendingOut }}</span>
           <i class="ti ti-chevron-right" style="font-size:16px;color:var(--text3);margin-left:4px" />
         </div>
+        <div class="menu-item" @click="router.push('/purchase')">
+          <div class="menu-icon icon-blue"><i class="ti ti-clipboard-plus" /></div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:500">下采购单</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:1px">公司端录入采购订单</div>
+          </div>
+          <i class="ti ti-chevron-right" style="font-size:16px;color:var(--text3)" />
+        </div>
       </div>
 
       <!-- 分装加工 -->
