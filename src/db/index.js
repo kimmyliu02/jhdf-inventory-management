@@ -88,8 +88,6 @@ export async function writeLedger({ productId, productName, batchNo, type, qtyCh
 }
 
 // ── Seed demo data on first run ──────────────────────────────────────────────
-// 把下面这段替换 src/db/index.js 里的 seedIfEmpty() 函数
-
 export async function seedIfEmpty() {
   const db       = await getDB()
   const existing = await db.getAll('products')
