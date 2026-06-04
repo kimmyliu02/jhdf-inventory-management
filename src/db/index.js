@@ -88,6 +88,8 @@ export async function writeLedger({ productId, productName, batchNo, type, qtyCh
 }
 
 // ── Seed demo data on first run ──────────────────────────────────────────────
+// 把下面这段替换 src/db/index.js 里的 seedIfEmpty() 函数
+
 export async function seedIfEmpty() {
   const db       = await getDB()
   const existing = await db.getAll('products')
@@ -95,39 +97,44 @@ export async function seedIfEmpty() {
 
   const tx1 = db.transaction('products', 'readwrite')
   await Promise.all([
-    { id: 1, name: '玉米原淀粉',       spec: '25 kg/袋', unit: '袋', type: 'raw'    },
-    { id: 2, name: '木薯淀粉',         spec: '50 kg/袋', unit: '袋', type: 'raw'    },
-    { id: 3, name: '马铃薯淀粉',       spec: '25 kg/袋', unit: '袋', type: 'raw'    },
-    { id: 4, name: '玉米淀粉（5kg装）',  spec: '5 kg/袋',  unit: '袋', type: 'packed' },
-    { id: 5, name: '玉米淀粉（10kg装）', spec: '10 kg/袋', unit: '袋', type: 'packed' },
-    { id: 6, name: '木薯淀粉（小包装）',  spec: '1 kg/袋',  unit: '袋', type: 'packed' },
+    // ── 风车牌 ──────────────────────────────────────────────
+    { id:  1, name: '25kg风车牌马铃薯淀粉',       spec: '1*25kg*40包', unit: '包', unitAlt1: '吨（1*40包）',  unitAlt2: null,          type: 'packed' },
+    { id:  2, name: '5kg风车牌马铃薯淀粉',        spec: '1*5kg*4包',   unit: '包', unitAlt1: '箱（1*4包）',   unitAlt2: null,          type: 'packed' },
+    { id:  3, name: '2.5kg风车牌马铃薯淀粉',      spec: '1*2.5kg*8包', unit: '包', unitAlt1: '箱（1*8包）',   unitAlt2: null,          type: 'packed' },
+    { id:  4, name: '250g风车牌马铃薯淀粉',       spec: '1*250g*48包', unit: '包', unitAlt1: '箱（1*48包）',  unitAlt2: null,          type: 'packed' },
+    { id:  5, name: '25kg风车牌蚕豆淀粉',         spec: '1*25kg*40包', unit: '包', unitAlt1: '吨（1*40包）',  unitAlt2: null,          type: 'packed' },
+
+    // ── 世界花 / KMC ────────────────────────────────────────
+    { id:  6, name: '25kg世界花马铃薯淀粉',       spec: '1*25kg*40包', unit: '包', unitAlt1: '吨（1*40包）',  unitAlt2: null,          type: 'packed' },
+    { id:  7, name: '25kgKMC变性淀粉',            spec: '1*25kg*40包', unit: '包', unitAlt1: '吨（1*40包）',  unitAlt2: null,          type: 'packed' },
+
+    // ── 磨乐牌 ──────────────────────────────────────────────
+    { id:  8, name: '2.5kg磨乐牌蚕豆淀粉',        spec: '1*2.5kg*8袋', unit: '袋', unitAlt1: '包（1*8袋）',   unitAlt2: '吨（1*400袋）', type: 'packed' },
+    { id:  9, name: '25kg磨乐牌马铃薯淀粉',       spec: '1*25kg*40包', unit: '包', unitAlt1: '吨（1*40包）',  unitAlt2: null,          type: 'packed' },
+    { id: 10, name: '25kg磨乐牌马铃薯淀粉（塑编袋）', spec: '1*25kg*40包', unit: '包', unitAlt1: '吨（1*40包）', unitAlt2: null,         type: 'packed' },
+    { id: 11, name: '5kg磨乐牌马铃薯淀粉（1*4）', spec: '1*5kg*4袋',   unit: '袋', unitAlt1: '包（1*4袋）',   unitAlt2: '吨（1*200袋）', type: 'packed' },
+    { id: 12, name: '5kg磨乐牌马铃薯淀粉（1*5）', spec: '1*5kg*5袋',   unit: '袋', unitAlt1: '包（1*5袋）',   unitAlt2: '吨（1*200袋）', type: 'packed' },
+    { id: 13, name: '5kg磨乐牌马铃薯淀粉（国产）', spec: '1*5kg*4袋',  unit: '袋', unitAlt1: '包（1*4袋）',   unitAlt2: '吨（1*200袋）', type: 'packed' },
+    { id: 14, name: '2.5kg磨乐牌马铃薯淀粉',      spec: '1*2.5kg*8袋', unit: '袋', unitAlt1: '包（1*8袋）',   unitAlt2: '吨（1*400袋）', type: 'packed' },
+    { id: 15, name: '2kg磨乐牌马铃薯淀粉',        spec: '1*2kg*10袋',  unit: '袋', unitAlt1: '包（1*10袋）',  unitAlt2: '吨（1*500袋）', type: 'packed' },
+    { id: 16, name: '2kg磨乐牌玉米淀粉',          spec: '1*2kg*10袋',  unit: '袋', unitAlt1: '包（1*10袋）',  unitAlt2: '吨（1*500袋）', type: 'packed' },
+    { id: 17, name: '2kg磨乐牌红薯淀粉',          spec: '1*2kg*10袋',  unit: '袋', unitAlt1: '包（1*10袋）',  unitAlt2: '吨（1*500袋）', type: 'packed' },
+    { id: 18, name: '2kg磨乐牌木薯淀粉',          spec: '1*2kg*10袋',  unit: '袋', unitAlt1: '包（1*10袋）',  unitAlt2: '吨（1*500袋）', type: 'packed' },
+    { id: 19, name: '2kg磨乐牌小麦淀粉',          spec: '1*2kg*10袋',  unit: '袋', unitAlt1: '包（1*10袋）',  unitAlt2: '吨（1*500袋）', type: 'packed' },
+    { id: 20, name: '2.5kg磨乐牌豌豆淀粉',        spec: '1*2.5kg*8袋', unit: '袋', unitAlt1: '包（1*8袋）',   unitAlt2: '吨（1*400袋）', type: 'packed' },
+    { id: 21, name: '2.5kg磨乐牌绿豆淀粉',        spec: '1*2.5kg*8袋', unit: '袋', unitAlt1: '包（1*8袋）',   unitAlt2: '吨（1*400袋）', type: 'packed' },
+
+    // ── 薯芯匠造 ────────────────────────────────────────────
+    { id: 22, name: '4kg薯芯匠造马铃薯淀粉',      spec: '1*4kg*5袋',   unit: '袋', unitAlt1: '包（1*5袋）',   unitAlt2: '吨（1*250袋）', type: 'packed' },
+
+    // ── 原料（散装进货）────────────────────────────────────
+    { id: 23, name: '25kg马铃薯淀粉（新疆优级）', spec: '1*25kg*40包', unit: '包', unitAlt1: '吨（1*40包）',  unitAlt2: null,          type: 'raw' },
+    { id: 24, name: '25kg马铃薯淀粉（斌发）',     spec: '1*25kg*40包', unit: '包', unitAlt1: '吨（1*40包）',  unitAlt2: null,          type: 'raw' },
+    { id: 25, name: '25kg马铃薯淀粉（河北）',     spec: '1*25kg*40包', unit: '包', unitAlt1: '吨（1*40包）',  unitAlt2: null,          type: 'raw' },
   ].map(p => tx1.store.put(p)))
   await tx1.done
 
-  const tx2 = db.transaction('inventory_ledger', 'readwrite')
-  await Promise.all([
-    { productId: 1, productName: '玉米原淀粉',       batchNo: 'LS-20240310', type: 'inbound',         qtyChange: 195 },
-    { productId: 2, productName: '木薯淀粉',         batchNo: 'LS-20240301', type: 'inbound',         qtyChange:  42 },
-    { productId: 3, productName: '马铃薯淀粉',       batchNo: 'LS-20240228', type: 'inbound',         qtyChange:  18 },
-    { productId: 4, productName: '玉米淀粉（5kg装）',  batchNo: 'FZ-20240310', type: 'process_produce', qtyChange: 320 },
-    { productId: 5, productName: '玉米淀粉（10kg装）', batchNo: 'FZ-20240308', type: 'process_produce', qtyChange:  55 },
-    { productId: 6, productName: '木薯淀粉（小包装）',  batchNo: 'FZ-20240305', type: 'process_produce', qtyChange: 880 },
-  ].map(r => tx2.store.add({ ...r, refNo: 'INIT', note: '期初库存', createdAt: '2024-03-01T00:00:00.000Z' })))
-  await tx2.done
-
-  const tx3 = db.transaction('purchase_orders', 'readwrite')
-  await Promise.all([
-    { orderNo: 'PO-2024-0312', productId: 1, productName: '玉米原淀粉', spec: '25 kg/袋', unit: '袋', qty: 200, batchNo: 'LS-20240310', shipper: '齐鲁淀粉有限公司', status: 'pending' },
-    { orderNo: 'PO-2024-0311', productId: 2, productName: '木薯淀粉',   spec: '50 kg/袋', unit: '袋', qty:  60, batchNo: 'LS-20240311', shipper: '广西木薯供应商',   status: 'pending' },
-    { orderNo: 'PO-2024-0310', productId: 3, productName: '马铃薯淀粉', spec: '25 kg/袋', unit: '袋', qty:  40, batchNo: 'LS-20240309', shipper: '云南马铃薯合作社', status: 'pending' },
-  ].map(o => tx3.store.add({ ...o, createdAt: '2024-03-12T09:00:00.000Z' })))
-  await tx3.done
-
-  const tx4 = db.transaction('sales_orders', 'readwrite')
-  await Promise.all([
-    { orderNo: 'SO-2024-0089', productId: 1, productName: '玉米原淀粉', batchNo: 'LS-20240310', unit: '袋', qty: 80, buyer: '天津食品加工厂', status: 'pending' },
-  ].map(o => tx4.store.add({ ...o, createdAt: '2024-03-12T11:00:00.000Z' })))
-  await tx4.done
+  // No opening stock — start from zero, enter real data via purchase orders
 }
 
 // ── Utility ──────────────────────────────────────────────────────────────────
