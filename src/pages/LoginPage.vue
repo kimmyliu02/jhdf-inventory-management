@@ -59,11 +59,13 @@ function login() {
       <div class="field-group">
         <label class="field-label">密码</label>
         <input
-          type="password"
+          type="text"
+          inputmode="text"
           placeholder="请输入密码"
           v-model="password"
-          autocomplete="current-password"
+          autocomplete="off"
           @keyup.enter="login"
+          style="-webkit-text-security: disc"
         >
       </div>
 
