@@ -1,28 +1,34 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { getById, updateRecord, writeLedger, getLiveStock, genNo } from '../db/index.js'
+import { getSalesOrders, confirmOutbound, getLiveStock } from '../api/index.js'
 
 const router = useRouter()
 const route  = useRoute()
 
-const order  = ref(null)
-const stock  = ref(0)
-const qty    = ref('')
-const remark = ref('')
-const done   = ref(false)
-const doneNo = ref('')
+const order   = ref(null)
+const stock   = ref(0)
+const qty     = ref('')
+const remark  = ref('')
+const transport = ref('自提')
+const driver  = ref('')
+const done    = ref(false)
+const doneNo  = ref('')
+const loading = ref(false)
 
 onMounted(async () => {
-  order.value = await getById('sales_orders', Number(route.params.id))
-  stock.value = await getLiveStock(order.value.productId, order.value.batchNo)
+  const orders = await getSalesOrders('pending')
+  order.value  = orders.find(o => o.id === Number(route.params.id))
+  if (order.value) {
+    stock.value = await getLiveStock(order.value.product_id, order.value.batch_no)
+  }
 })
 
 const hint = computed(() => {
   const v = parseInt(qty.value) || 0
   if (!v || !order.value) return null
   if (v > stock.value) return { type: 'hint-bad',  icon: 'ti-alert-circle',    text: `发货量超出库存（${stock.value} ${order.value.unit}），无法提交` }
-  if (v === order.value.qty) return { type: 'hint-ok', icon: 'ti-circle-check', text: '与销售单数量一致' }
+  if (v === Number(order.value.qty)) return { type: 'hint-ok', icon: 'ti-circle-check', text: '与销售单数量一致' }
   return { type: 'hint-warn', icon: 'ti-alert-triangle', text: `与销售单差异 ${v - order.value.qty} ${order.value.unit}，请确认` }
 })
 
@@ -30,18 +36,27 @@ async function submit() {
   const q = parseInt(qty.value)
   if (!q || q <= 0) return alert('请填写实发数量')
   if (q > stock.value) return alert('发货量超出库存')
-  const o = order.value
-  await updateRecord('sales_orders', { ...o, status: 'done', actualQty: q, completedAt: new Date().toISOString() })
-  await writeLedger({ productId: o.productId, productName: o.productName, batchNo: o.batchNo, type: 'outbound', qtyChange: -q, refNo: o.orderNo, note: remark.value })
-  doneNo.value = genNo('OUT')
-  done.value   = true
+  loading.value = true
+  try {
+    const res = await confirmOutbound(order.value.id, {
+      qty_actual: q,
+      transport: transport.value,
+      driver: driver.value,
+      note: remark.value,
+    })
+    doneNo.value = res.outbound_no
+    done.value   = true
+  } catch (e) {
+    alert(e.message)
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
 <template>
   <div class="screen" v-if="order">
 
-    <!-- Success -->
     <template v-if="done">
       <div class="topbar">
         <span class="back-btn" @click="router.push('/outbound')"><i class="ti ti-arrow-left" /></span>
@@ -50,14 +65,13 @@ async function submit() {
       <div class="success-wrap">
         <div class="success-icon" style="background:var(--purple-light);color:var(--purple)"><i class="ti ti-truck" /></div>
         <div class="success-title">发货成功</div>
-        <div class="success-sub">{{ order.productName }} −{{ qty }} {{ order.unit }}<br>库存已自动扣减</div>
+        <div class="success-sub">{{ order.product_name }} −{{ qty }} {{ order.unit }}<br>库存已自动扣减</div>
         <div class="success-tag" style="background:var(--purple-light);color:var(--purple-dark)">出库单号：{{ doneNo }}</div>
         <button class="btn btn-purple" style="margin-top:28px" @click="router.push('/outbound')">继续下一单</button>
         <button class="btn btn-ghost" @click="router.push('/')">返回首页</button>
       </div>
     </template>
 
-    <!-- Form -->
     <template v-else>
       <div class="topbar">
         <span class="back-btn" @click="router.push('/outbound')"><i class="ti ti-arrow-left" /></span>
@@ -66,14 +80,14 @@ async function submit() {
       </div>
       <div class="body">
         <div class="card">
-          <div style="font-size:15px;font-weight:700">{{ order.orderNo }}</div>
+          <div style="font-size:15px;font-weight:700">{{ order.order_no }}</div>
           <div style="font-size:12px;color:var(--text3);margin-top:3px">购货方：{{ order.buyer }}</div>
         </div>
 
         <div class="section-header"><i class="ti ti-file-text" />销售单信息（只读）</div>
         <div class="info-block">
-          <div class="info-row"><span class="info-key">品名</span><span class="info-val">{{ order.productName }}</span></div>
-          <div class="info-row"><span class="info-key">批次号</span><span class="info-val">{{ order.batchNo }}</span></div>
+          <div class="info-row"><span class="info-key">品名</span><span class="info-val">{{ order.product_name }}</span></div>
+          <div class="info-row"><span class="info-key">批次号</span><span class="info-val">{{ order.batch_no }}</span></div>
           <div class="info-row"><span class="info-key">单位</span><span class="info-val">{{ order.unit }}</span></div>
           <div class="info-row"><span class="info-key">应发数量</span><span class="info-val" style="color:var(--purple)">{{ order.qty }} {{ order.unit }}</span></div>
           <div class="info-row">
@@ -97,12 +111,14 @@ async function submit() {
 
         <div class="field-group">
           <label class="field-label">承运方式</label>
-          <select><option>自提</option><option>物流配送</option><option>公司自送</option></select>
+          <select v-model="transport">
+            <option>自提</option><option>物流配送</option><option>公司自送</option>
+          </select>
         </div>
 
         <div class="field-group">
           <label class="field-label">司机 / 车牌（选填）</label>
-          <input type="text" placeholder="如：鲁A 12345">
+          <input type="text" placeholder="如：鲁A 12345" v-model="driver">
         </div>
 
         <div class="field-group">
@@ -110,9 +126,17 @@ async function submit() {
           <textarea rows="2" placeholder="如有差异请说明…" v-model="remark" />
         </div>
 
-        <button class="btn btn-purple" @click="submit"><i class="ti ti-truck" />确认发货</button>
+        <button class="btn btn-purple" @click="submit" :disabled="loading">
+          <i class="ti ti-loader-2" v-if="loading" style="animation:spin 1s linear infinite" />
+          <i class="ti ti-truck" v-else />
+          {{ loading ? '提交中…' : '确认发货' }}
+        </button>
         <button class="btn btn-ghost" @click="router.push('/outbound')">返回列表</button>
       </div>
     </template>
   </div>
 </template>
+
+<style scoped>
+@keyframes spin { to { transform: rotate(360deg) } }
+</style>
