@@ -20,13 +20,13 @@ const PORT = process.env.PORT || 3000
 // ── Middleware ──────────────────────────────────────────────────────────────
 app.use(cors({
   origin: [
-    process.env.FRONTEND_URL,
-    'http://localhost:5173',   // local dev
-    'http://localhost:4173',   // local preview
+    'https://kimmyliu02.github.io',
+    'https://kimmyliu02.github.io/jhdf-inventory-management',
+    'http://localhost:5173',
+    'http://localhost:4173',
   ],
   credentials: true,
 }))
-app.use(express.json())
 
 // ── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/auth',            authRoutes)
