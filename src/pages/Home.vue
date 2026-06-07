@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getAll } from '../db/index.js'
+import { getPurchaseOrders, getSalesOrders } from '../api/index.js'
 import { useAuth } from '../composables/useAuth.js'
 
 const router = useRouter()
@@ -15,9 +15,14 @@ const isCompany   = computed(() => user.value?.role === 'company')
 const isWarehouse = computed(() => user.value?.role === 'warehouse')
 
 onMounted(async () => {
-  const [pos, sos] = await Promise.all([getAll('purchase_orders'), getAll('sales_orders')])
-  pendingIn.value  = pos.filter(o => o.status === 'pending').length
-  pendingOut.value = sos.filter(o => o.status === 'pending').length
+  if (isWarehouse.value) {
+    const [pos, sos] = await Promise.all([
+      getPurchaseOrders('pending'),
+      getSalesOrders('pending'),
+    ])
+    pendingIn.value  = pos.length
+    pendingOut.value = sos.length
+  }
 })
 </script>
 
@@ -36,11 +41,8 @@ onMounted(async () => {
       </div>
       <div>
         <div style="font-size:14px;font-weight:700">{{ user?.name }}</div>
-        <div style="font-size:11px;color:var(--text3)">
-          {{ isCompany ? '公司端' : '仓库端' }}
-        </div>
+        <div style="font-size:11px;color:var(--text3)">{{ isCompany ? '公司端' : '仓库端' }}</div>
       </div>
-      <!-- Logout -->
       <div
         style="margin-left:auto;display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text3);cursor:pointer;padding:6px 8px;border-radius:8px"
         @click="logout(router)"
@@ -88,7 +90,6 @@ onMounted(async () => {
 
       <!-- ── 仓库端 ── -->
       <template v-if="isWarehouse">
-        <!-- Stats -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
           <div style="background:var(--bg2);border-radius:var(--radius-sm);border:0.5px solid var(--border);padding:12px 14px">
             <div style="font-size:28px;font-weight:700;line-height:1" :style="{ color: pendingIn > 0 ? 'var(--amber)' : 'var(--teal)' }">{{ pendingIn }}</div>
