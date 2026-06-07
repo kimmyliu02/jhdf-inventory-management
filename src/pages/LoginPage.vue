@@ -1,33 +1,25 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { login } from '../api/index.js'
 
 const router   = useRouter()
 const username = ref('')
 const password = ref('')
 const error    = ref('')
+const loading  = ref(false)
 
-// Hardcoded accounts — replace with your real names/passwords
-// role: 'company' = 公司端, 'warehouse' = 仓库端
-const ACCOUNTS = [
-  { username: 'admin',    password: '1234', role: 'company',   name: '管理员' },
-  { username: 'company1', password: '1234', role: 'company',   name: '采购员' },
-  { username: 'warehouse1', password: '1234', role: 'warehouse', name: '李师傅' },
-  { username: 'warehouse2', password: '1234', role: 'warehouse', name: '王师傅' },
-]
-
-function login() {
-  error.value = ''
-  const account = ACCOUNTS.find(
-    a => a.username === username.value.trim() && a.password === password.value
-  )
-  if (!account) {
-    error.value = '用户名或密码错误'
-    return
+async function doLogin() {
+  error.value   = ''
+  loading.value = true
+  try {
+    await login(username.value, password.value)
+    router.replace('/')
+  } catch (e) {
+    error.value = e.message || '用户名或密码错误'
+  } finally {
+    loading.value = false
   }
-  // Save session to localStorage
-  localStorage.setItem('wh_user', JSON.stringify({ username: account.username, name: account.name, role: account.role }))
-  router.replace('/')
 }
 </script>
 
@@ -35,7 +27,6 @@ function login() {
   <div class="screen" style="justify-content:center;background:var(--bg)">
     <div style="padding:40px 24px">
 
-      <!-- Logo area -->
       <div style="text-align:center;margin-bottom:36px">
         <div style="width:64px;height:64px;border-radius:18px;background:var(--teal-light);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:30px;color:var(--teal)">
           <i class="ti ti-building-warehouse" />
@@ -44,7 +35,6 @@ function login() {
         <div style="font-size:13px;color:var(--text3);margin-top:4px">淀粉工厂</div>
       </div>
 
-      <!-- Form -->
       <div class="field-group">
         <label class="field-label">用户名</label>
         <input
@@ -52,7 +42,7 @@ function login() {
           placeholder="请输入用户名"
           v-model="username"
           autocomplete="username"
-          @keyup.enter="login"
+          @keyup.enter="doLogin"
         >
       </div>
 
@@ -60,12 +50,11 @@ function login() {
         <label class="field-label">密码</label>
         <input
           type="text"
-          inputmode="text"
           placeholder="请输入密码"
           v-model="password"
-          autocomplete="off"
-          @keyup.enter="login"
-          style="-webkit-text-security: disc"
+          autocomplete="current-password"
+          @keyup.enter="doLogin"
+          style="-webkit-text-security:disc"
         >
       </div>
 
@@ -73,8 +62,10 @@ function login() {
         <i class="ti ti-alert-circle" />{{ error }}
       </div>
 
-      <button class="btn btn-teal" style="margin-top:4px" @click="login">
-        <i class="ti ti-login" />登录
+      <button class="btn btn-teal" style="margin-top:4px" @click="doLogin" :disabled="loading">
+        <i class="ti ti-loader-2" v-if="loading" style="animation:spin 1s linear infinite" />
+        <i class="ti ti-login" v-else />
+        {{ loading ? '登录中…' : '登录' }}
       </button>
 
       <div style="text-align:center;font-size:12px;color:var(--text3);margin-top:20px">
@@ -83,3 +74,7 @@ function login() {
     </div>
   </div>
 </template>
+
+<style scoped>
+@keyframes spin { to { transform: rotate(360deg) } }
+</style>
