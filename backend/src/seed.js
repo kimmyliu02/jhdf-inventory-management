@@ -12,10 +12,13 @@ async function seed() {
 
   // ── Users ────────────────────────────────────────────────────────────────
   const users = [
-    { username: 'admin',       password: '1234', name: '管理员', role: 'company'   },
-    { username: 'company1',    password: '1234', name: '采购员', role: 'company'   },
-    { username: 'warehouse1',  password: '1234', name: '李师傅', role: 'warehouse' },
-    { username: 'warehouse2',  password: '1234', name: '王师傅', role: 'warehouse' },
+    { username: 'lq', password: '517517', name: '刘强', role: 'company' },
+    { username: 'jhk', password: '213213', name: '金红坤', role: 'company' },
+    { username: 'lj', password: '1234', name: '刘洁', role: 'company' },
+    { username: 'jw', password: '1234', name: '金维', role: 'company' },
+    { username: 'sb', password: '1234', name: '沈斌', role: 'warehouse' },
+    { username: 'warehouse1', password: '1234', name: 'warehouse1', role: 'warehouse' },
+    { username: 'warehouse2', password: '1234', name: 'warehouse2', role: 'warehouse' },
   ]
 
   for (const u of users) {
