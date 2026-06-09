@@ -4,13 +4,14 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { initSchema } from './db.js'
-
+ 
 import authRoutes        from './routes/auth.js'
 import productRoutes     from './routes/products.js'
 import inventoryRoutes   from './routes/inventory.js'
 import purchaseRoutes    from './routes/purchaseOrders.js'
 import salesRoutes       from './routes/salesOrders.js'
 import processingRoutes  from './routes/processing.js'
+import historyRoutes     from './routes/history.js'
 
 dotenv.config()
 
@@ -30,12 +31,13 @@ app.use(cors({
 app.use(express.json())
 
 // ── Routes ──────────────────────────────────────────────────────────────────
-app.use('/api/auth',            authRoutes)
-app.use('/api/products',        productRoutes)
-app.use('/api/inventory',       inventoryRoutes)
+app.use('/api/auth', authRoutes)
+app.use('/api/products', productRoutes)
+app.use('/api/inventory', inventoryRoutes)
 app.use('/api/purchase-orders', purchaseRoutes)
-app.use('/api/sales-orders',    salesRoutes)
-app.use('/api/processing',      processingRoutes)
+app.use('/api/sales-orders', salesRoutes)
+app.use('/api/processing', processingRoutes)
+app.use('/api/history', historyRoutes)
 
 // Health check
 app.get('/api/health', (_, res) => res.json({ ok: true }))
