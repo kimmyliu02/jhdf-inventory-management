@@ -14,7 +14,11 @@ export function useAuth() {
     return getUser()?.role === 'warehouse'
   }
 
-  return { getUser, logout, isCompany, isWarehouse }
+  function isReadonly() {
+    return getUser()?.role === 'readonly'
+  }
+
+  return { getUser, logout, isCompany, isWarehouse, isReadonly }
 }
 
 export function setupGuard(router) {
@@ -28,6 +32,12 @@ export function setupGuard(router) {
     if (!user && !PUBLIC_ROUTES.includes(to.path)) return '/login'
     if (user && to.path === '/login') return '/'
 
+    // readonly can only access / and /inventory and /history
+    if (user?.role === 'readonly') {
+      const allowed = ['/', '/inventory', '/history/inbound', '/history/outbound', '/history/processing']
+      if (!allowed.some(p => to.path === p)) return '/'
+    }
+    
     if (user?.role === 'warehouse' && COMPANY_ONLY.some(p => to.path.startsWith(p))) return '/'
     if (user?.role === 'company' && WAREHOUSE_ONLY.some(p => to.path.startsWith(p))) return '/'
   })
