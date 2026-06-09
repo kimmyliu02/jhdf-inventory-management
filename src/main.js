@@ -15,6 +15,9 @@ import ProcessForm  from './pages/ProcessForm.vue'
 import Inventory    from './pages/Inventory.vue'
 import PurchaseForm from './pages/PurchaseForm.vue'
 import SalesForm    from './pages/SalesForm.vue'
+import HistoryInbound   from './pages/HistoryInbound.vue'
+import HistoryOutbound  from './pages/HistoryOutbound.vue'
+import HistoryProcessing from './pages/HistoryProcessing.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -29,6 +32,9 @@ const router = createRouter({
     { path: '/inventory',     component: Inventory },
     { path: '/purchase',      component: PurchaseForm },
     { path: '/sales',         component: SalesForm },
+    { path: '/history/inbound',      component: HistoryInbound },
+    { path: '/history/outbound',     component: HistoryOutbound },
+    { path: '/history/processing',   component: HistoryProcessing },
   ],
 })
 
