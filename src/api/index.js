@@ -4,7 +4,7 @@
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
-// ── Token helpers ────────────────────────────────────────────────────────────
+// Token helpers
 function getToken() {
   return localStorage.getItem('wh_token')
 }
@@ -19,7 +19,7 @@ function clearSession() {
   localStorage.removeItem('wh_user')
 }
 
-// ── Base fetch wrapper ───────────────────────────────────────────────────────
+// Base fetch wrapper
 async function api(method, path, body) {
   const res = await fetch(`${BASE}${path}`, {
     method,
@@ -41,7 +41,7 @@ async function api(method, path, body) {
   return data
 }
 
-// ── Auth ─────────────────────────────────────────────────────────────────────
+// Auth
 export async function login(username, password) {
   const data = await api('POST', '/api/auth/login', { username, password })
   saveSession(data.token, data.user)
@@ -57,12 +57,12 @@ export function getUser() {
   try { return JSON.parse(localStorage.getItem('wh_user')) } catch { return null }
 }
 
-// ── Products ─────────────────────────────────────────────────────────────────
+// Products
 export async function getProducts() {
   return api('GET', '/api/products')
 }
 
-// ── Inventory ─────────────────────────────────────────────────────────────────
+// Inventory
 export async function getAllStock() {
   return api('GET', '/api/inventory')
 }
@@ -72,7 +72,7 @@ export async function getLiveStock(productId, batchNo) {
   return data.qty
 }
 
-// ── Purchase orders ───────────────────────────────────────────────────────────
+// Purchase orders
 export async function getPurchaseOrders(status) {
   const q = status ? `?status=${status}` : ''
   return api('GET', `/api/purchase-orders${q}`)
@@ -86,7 +86,7 @@ export async function confirmInbound(orderId, data) {
   return api('POST', `/api/purchase-orders/${orderId}/inbound`, data)
 }
 
-// ── Sales orders ──────────────────────────────────────────────────────────────
+// Sales orders 
 export async function getSalesOrders(status) {
   const q = status ? `?status=${status}` : ''
   return api('GET', `/api/sales-orders${q}`)
@@ -100,7 +100,18 @@ export async function confirmOutbound(orderId, data) {
   return api('POST', `/api/sales-orders/${orderId}/outbound`, data)
 }
 
-// ── Processing ────────────────────────────────────────────────────────────────
+// Processing
 export async function createProcessing(data) {
   return api('POST', '/api/processing', data)
+}
+
+// History
+export async function getInboundHistory() { 
+  return api('GET', '/api/history/inbound') 
+}
+export async function getOutboundHistory() {
+  return api('GET', '/api/history/outbound') 
+}
+export async function getProcessingHistory() {
+  return api('GET', '/api/history/processing') 
 }
