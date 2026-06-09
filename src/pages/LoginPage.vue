@@ -31,7 +31,7 @@ async function doLogin() {
         <div style="width:64px;height:64px;border-radius:18px;background:var(--teal-light);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:30px;color:var(--teal)">
           <i class="ti ti-building-warehouse" />
         </div>
-        <div style="font-size:20px;font-weight:700;color:var(--text)">嘉禾鼎丰</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text)">嘉和鼎丰</div>
         <div style="font-size:13px;color:var(--text3);margin-top:4px">仓库管理系统</div>
       </div>
 

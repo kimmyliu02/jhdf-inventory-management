@@ -23,9 +23,9 @@ export default defineConfig({
       },
 
       manifest: {
-        name: 'Project',
-        short_name: 'project',
-        description: 'INFO 4340/5440: Project',
+        name: '嘉和鼎丰库存管理系统',
+        short_name: '嘉和鼎丰',
+        description: '嘉和鼎丰仓库库存管理系统',
         theme_color: '#ffffff',
         display: 'standalone',
       },
