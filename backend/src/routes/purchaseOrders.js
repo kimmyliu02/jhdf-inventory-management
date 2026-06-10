@@ -1,7 +1,6 @@
 // backend/src/routes/purchaseOrders.js
-
 import { Router } from 'express'
-import { pool } from '../db.js'
+import { pool, withTransaction } from '../db.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 
 const router = Router()
@@ -11,17 +10,19 @@ function genNo(prefix) {
   return `${prefix}-${d}-${Math.floor(Math.random()*9000+1000)}`
 }
 
-// GET /api/purchase-orders?status=pending
+// GET /api/purchase-orders
 router.get('/', requireAuth, async (req, res) => {
   try {
     const { status } = req.query
-    const { rows } = await pool.query(`
+    let sql = `
       SELECT po.*, u.name AS created_by_name
       FROM purchase_orders po
       LEFT JOIN users u ON u.id = po.created_by
-      ${status ? 'WHERE po.status = $1' : ''}
-      ORDER BY po.created_at DESC
-    `, status ? [status] : [])
+    `
+    const params = []
+    if (status) { sql += ' WHERE po.status = ?'; params.push(status) }
+    sql += ' ORDER BY po.created_at DESC'
+    const [rows] = await pool.query(sql, params)
     res.json(rows)
   } catch (err) {
     console.error(err)
@@ -29,7 +30,7 @@ router.get('/', requireAuth, async (req, res) => {
   }
 })
 
-// POST /api/purchase-orders — company creates order
+// POST /api/purchase-orders
 router.post('/', requireAuth, requireRole('company'), async (req, res) => {
   const { product_id, product_name, spec, unit, qty, batch_no, shipper, expected_date, note } = req.body
   if (!product_id || !qty || !batch_no || !shipper) {
@@ -37,12 +38,13 @@ router.post('/', requireAuth, requireRole('company'), async (req, res) => {
   }
   try {
     const order_no = genNo('PO')
-    const { rows } = await pool.query(`
-      INSERT INTO purchase_orders
+    await pool.query(
+      `INSERT INTO purchase_orders
         (order_no, product_id, product_name, spec, unit, qty, batch_no, shipper, expected_date, note, created_by)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-      RETURNING *
-    `, [order_no, product_id, product_name, spec, unit, qty, batch_no, shipper, expected_date || null, note || '', req.user.id])
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      [order_no, product_id, product_name, spec, unit, qty, batch_no, shipper, expected_date || null, note || '', req.user.id]
+    )
+    const [rows] = await pool.query('SELECT * FROM purchase_orders WHERE order_no = ?', [order_no])
     res.status(201).json(rows[0])
   } catch (err) {
     console.error(err)
@@ -50,52 +52,41 @@ router.post('/', requireAuth, requireRole('company'), async (req, res) => {
   }
 })
 
-// POST /api/purchase-orders/:id/inbound — warehouse confirms inbound
+// POST /api/purchase-orders/:id/inbound
 router.post('/:id/inbound', requireAuth, requireRole('warehouse'), async (req, res) => {
   const { qty_actual, location, note } = req.body
   if (!qty_actual) return res.status(400).json({ error: '请填写实收数量' })
 
-  const client = await pool.connect()
   try {
-    await client.query('BEGIN')
+    await withTransaction(async (conn) => {
+      const [poRows] = await conn.query('SELECT * FROM purchase_orders WHERE id = ?', [req.params.id])
+      const po = poRows[0]
+      if (!po) throw Object.assign(new Error('采购单不存在'), { status: 404 })
+      if (po.status === 'done') throw Object.assign(new Error('该采购单已完成入库'), { status: 400 })
 
-    // Get the purchase order
-    const { rows: poRows } = await client.query(
-      'SELECT * FROM purchase_orders WHERE id = $1', [req.params.id]
-    )
-    const po = poRows[0]
-    if (!po) return res.status(404).json({ error: '采购单不存在' })
-    if (po.status === 'done') return res.status(400).json({ error: '该采购单已完成入库' })
+      const inbound_no = genNo('IN')
 
-    const inbound_no = genNo('IN')
+      await conn.query(
+        `INSERT INTO inbound_records
+          (inbound_no, purchase_order_id, product_id, product_name, batch_no, qty_ordered, qty_actual, location, note, created_by)
+         VALUES (?,?,?,?,?,?,?,?,?,?)`,
+        [inbound_no, po.id, po.product_id, po.product_name, po.batch_no, po.qty, qty_actual, location || '', note || '', req.user.id]
+      )
 
-    // Create inbound record
-    await client.query(`
-      INSERT INTO inbound_records
-        (inbound_no, purchase_order_id, product_id, product_name, batch_no, qty_ordered, qty_actual, location, note, created_by)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-    `, [inbound_no, po.id, po.product_id, po.product_name, po.batch_no, po.qty, qty_actual, location || '', note || '', req.user.id])
+      await conn.query(
+        `INSERT INTO inventory_ledger
+          (product_id, product_name, batch_no, type, qty_change, ref_no, note, created_by)
+         VALUES (?,?,?,'inbound',?,?,?,?)`,
+        [po.product_id, po.product_name, po.batch_no, qty_actual, inbound_no, note || '', req.user.id]
+      )
 
-    // Write inventory ledger
-    await client.query(`
-      INSERT INTO inventory_ledger
-        (product_id, product_name, batch_no, type, qty_change, ref_no, note, created_by)
-      VALUES ($1,$2,$3,'inbound',$4,$5,$6,$7)
-    `, [po.product_id, po.product_name, po.batch_no, qty_actual, inbound_no, note || '', req.user.id])
+      await conn.query("UPDATE purchase_orders SET status = 'done' WHERE id = ?", [po.id])
 
-    // Update purchase order status
-    await client.query(
-      "UPDATE purchase_orders SET status = 'done' WHERE id = $1", [po.id]
-    )
-
-    await client.query('COMMIT')
-    res.json({ inbound_no, message: '入库成功' })
+      res.json({ inbound_no, message: '入库成功' })
+    })
   } catch (err) {
-    await client.query('ROLLBACK')
     console.error(err)
-    res.status(500).json({ error: '服务器错误' })
-  } finally {
-    client.release()
+    res.status(err.status || 500).json({ error: err.message || '服务器错误' })
   }
 })
 

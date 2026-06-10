@@ -1,20 +1,19 @@
 // backend/src/routes/inventory.js
-
 import { Router } from 'express'
 import { pool } from '../db.js'
 import { requireAuth } from '../middleware/auth.js'
 
 const router = Router()
 
-// GET /api/inventory — all product+batch stock totals
+// GET /api/inventory — all stock totals
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { rows } = await pool.query(`
+    const [rows] = await pool.query(`
       SELECT
         l.product_id,
         l.product_name,
         l.batch_no,
-        SUM(l.qty_change)::NUMERIC AS qty,
+        SUM(l.qty_change) AS qty,
         p.spec,
         p.unit,
         p.type
@@ -31,14 +30,13 @@ router.get('/', requireAuth, async (req, res) => {
   }
 })
 
-// GET /api/inventory/:productId/:batchNo — single product+batch stock
+// GET /api/inventory/:productId/:batchNo
 router.get('/:productId/:batchNo', requireAuth, async (req, res) => {
   try {
-    const { rows } = await pool.query(`
-      SELECT COALESCE(SUM(qty_change), 0)::NUMERIC AS qty
-      FROM inventory_ledger
-      WHERE product_id = $1 AND batch_no = $2
-    `, [req.params.productId, req.params.batchNo])
+    const [rows] = await pool.query(
+      'SELECT COALESCE(SUM(qty_change), 0) AS qty FROM inventory_ledger WHERE product_id = ? AND batch_no = ?',
+      [req.params.productId, req.params.batchNo]
+    )
     res.json({ qty: Number(rows[0].qty) })
   } catch (err) {
     console.error(err)
