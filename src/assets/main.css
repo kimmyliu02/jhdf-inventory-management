@@ -46,7 +46,7 @@ html, body {
 #app-shell {
   max-width: 430px;
   margin: 0 auto;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
   box-shadow: 0 0 40px rgba(0,0,0,0.06);
 }
@@ -55,7 +55,7 @@ html, body {
 .screen {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
   animation: fadeIn .18s ease;
 }
