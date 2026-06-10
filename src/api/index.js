@@ -115,3 +115,11 @@ export async function getOutboundHistory() {
 export async function getProcessingHistory() {
   return api('GET', '/api/history/processing') 
 }
+
+export async function cancelPurchaseOrder(orderId) {
+  return api('DELETE', `/api/purchase-orders/${orderId}`)
+}
+
+export async function cancelSalesOrder(orderId) {
+  return api('DELETE', `/api/sales-orders/${orderId}`)
+}

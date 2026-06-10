@@ -1,12 +1,23 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getSalesOrders, getLiveStock } from '../api/index.js'
+import { getSalesOrders, getLiveStock, cancelSalesOrder } from '../api/index.js'
 
 const router  = useRouter()
 const orders  = ref([])
 const loading = ref(true)
 const error   = ref('')
+
+async function cancelOrder(o) {
+  if (!confirm(`确定取消销售单 ${o.order_no} 吗？`)) return
+
+  try {
+    await cancelSalesOrder(o.id)
+    orders.value = orders.value.filter(item => item.id !== o.id)
+  } catch (e) {
+    alert(e.message)
+  }
+}
 
 onMounted(async () => {
   try {
@@ -46,7 +57,10 @@ onMounted(async () => {
             <div style="font-size:15px;font-weight:700">{{ o.order_no }}</div>
             <div style="font-size:12px;color:var(--text3);margin-top:3px">购货方：{{ o.buyer }}</div>
           </div>
-          <span class="badge badge-purple">待发货</span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span class="badge badge-purple">待发货</span>
+            <button class="small-danger-btn" @click.stop="cancelOrder(o)">取消</button>
+          </div>
         </div>
         <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">
           <div style="display:flex;justify-content:space-between;align-items:center">

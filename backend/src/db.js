@@ -142,6 +142,20 @@ export async function initSchema() {
     ALTER TABLE users ADD CONSTRAINT users_role_check
       CHECK (role IN ('company', 'warehouse', 'readonly'));
   `).catch(() => {}) // ignore if already correct
+
+  // Add cancelled status to existing purchase_orders databases
+await pool.query(`
+  ALTER TABLE purchase_orders DROP CONSTRAINT IF EXISTS purchase_orders_status_check;
+  ALTER TABLE purchase_orders ADD CONSTRAINT purchase_orders_status_check
+    CHECK (status IN ('pending', 'partial', 'done', 'cancelled'));
+`).catch(() => {})
+
+// Add cancelled status to existing sales_orders databases
+await pool.query(`
+  ALTER TABLE sales_orders DROP CONSTRAINT IF EXISTS sales_orders_status_check;
+  ALTER TABLE sales_orders ADD CONSTRAINT sales_orders_status_check
+    CHECK (status IN ('pending', 'done', 'cancelled'));
+`).catch(() => {})
  
   console.log('✅ Schema ready')
 }

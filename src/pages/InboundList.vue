@@ -1,12 +1,23 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getPurchaseOrders } from '../api/index.js'
+import { getPurchaseOrders, cancelPurchaseOrder } from '../api/index.js'
 
 const router = useRouter()
 const orders = ref([])
 const loading = ref(true)
 const error = ref('')
+
+async function cancelOrder(o) {
+  if (!confirm(`确定取消采购单 ${o.order_no} 吗？`)) return
+
+  try {
+    await cancelPurchaseOrder(o.id)
+    orders.value = orders.value.filter(item => item.id !== o.id)
+  } catch (e) {
+    alert(e.message)
+  }
+}
 
 onMounted(async () => {
   try {
@@ -42,7 +53,10 @@ onMounted(async () => {
             <div style="font-size:15px;font-weight:700">{{ o.order_no }}</div>
             <div style="font-size:12px;color:var(--text3);margin-top:3px">发货方：{{ o.shipper }}</div>
           </div>
-          <span class="badge badge-amber">待入库</span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span class="badge badge-amber">待入库</span>
+            <button class="small-danger-btn" @click.stop="cancelOrder(o)">取消</button>
+          </div>
         </div>
         <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:13px;color:var(--text2)">{{ o.product_name }}（{{ o.spec }}）批次：{{ o.batch_no }}</span>

@@ -113,4 +113,31 @@ router.post('/:id/inbound', requireAuth, requireRole('warehouse'), async (req, r
   }
 })
 
+// DELETE /api/purchase-orders/:id — cancel pending purchase order
+router.delete('/:id', requireAuth, requireRole('company'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM purchase_orders WHERE id = $1`,
+      [req.params.id]
+    )
+
+    const po = rows[0]
+    if (!po) return res.status(404).json({ error: '采购单不存在' })
+
+    if (po.status !== 'pending') {
+      return res.status(400).json({ error: '只有待入库采购单可以取消' })
+    }
+
+    await pool.query(
+      `UPDATE purchase_orders SET status = 'cancelled' WHERE id = $1`,
+      [req.params.id]
+    )
+
+    res.json({ message: '采购单已取消' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: '服务器错误' })
+  }
+})
+
 export default router

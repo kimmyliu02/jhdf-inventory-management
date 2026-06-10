@@ -129,4 +129,31 @@ router.post('/:id/outbound', requireAuth, requireRole('warehouse'), async (req, 
   }
 })
 
+// DELETE /api/sales-orders/:id — cancel pending sales order
+router.delete('/:id', requireAuth, requireRole('company'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM sales_orders WHERE id = $1`,
+      [req.params.id]
+    )
+
+    const so = rows[0]
+    if (!so) return res.status(404).json({ error: '销售单不存在' })
+
+    if (so.status !== 'pending') {
+      return res.status(400).json({ error: '只有待出库销售单可以取消' })
+    }
+
+    await pool.query(
+      `UPDATE sales_orders SET status = 'cancelled' WHERE id = $1`,
+      [req.params.id]
+    )
+
+    res.json({ message: '销售单已取消' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: '服务器错误' })
+  }
+})
+
 export default router
