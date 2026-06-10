@@ -56,5 +56,5 @@ export default defineConfig({
     cors: true,
     browser: false,
   },
-  base: process.env.DEPLOY === "github" ? `/${process.env.RepositoryName || path.basename(fileURLToPath(new URL('.', import.meta.url)))}/` : './',
+  base: process.env.DEPLOY === "github" ? "/jhdf-inventory-management/" : "./",
 })
