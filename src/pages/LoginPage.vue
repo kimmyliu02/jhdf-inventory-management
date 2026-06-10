@@ -28,11 +28,10 @@ async function doLogin() {
     <div style="padding:40px 24px">
 
       <div style="text-align:center;margin-bottom:36px">
-        <div style="width:64px;height:64px;border-radius:18px;background:var(--teal-light);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:30px;color:var(--teal)">
-          <img src="/jhdf_logo_transparent.svg" alt="logo" style="width:44px;height:44px;object-fit:contain;" />
+        <div style="width:128px;height:128px;border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:30px;">
+          <img src="/jhdf_logo_transparent.svg" alt="logo" style="width:108px;height:108px;object-fit:contain;" />
         </div>
-        <div style="font-size:20px;font-weight:700;color:var(--text)">嘉和鼎丰</div>
-        <div style="font-size:13px;color:var(--text3);margin-top:4px">仓库管理系统</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text)">仓库管理系统</div>
       </div>
 
       <div class="field-group">
