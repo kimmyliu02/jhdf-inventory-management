@@ -6,9 +6,23 @@ import { requireAuth, requireRole } from '../middleware/auth.js'
 
 const router = Router()
 
-function genNo(prefix) {
-  const d = new Date().toISOString().slice(0,10).replace(/-/g,'')
-  return `${prefix}-${d}-${Math.floor(Math.random()*9000+1000)}`
+async function genDailyNo(clientOrPool, prefix, tableName, columnName) {
+  const d = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  const likePattern = `${prefix}-${d}-%`
+
+  const { rows } = await clientOrPool.query(
+    `
+    SELECT COUNT(*)::int AS count
+    FROM ${tableName}
+    WHERE ${columnName} LIKE $1
+    `,
+    [likePattern]
+  )
+
+  const nextNum = rows[0].count + 1
+  const seq = String(nextNum).padStart(4, '0')
+
+  return `${prefix}-${d}-${seq}`
 }
 
 // GET /api/sales-orders?status=pending
@@ -47,7 +61,7 @@ router.post('/', requireAuth, requireRole('company'), async (req, res) => {
       return res.status(400).json({ error: `库存不足（当前 ${stock} ${unit}）` })
     }
 
-    const order_no = genNo('SO')
+    const order_no = await genDailyNo(pool, 'SO', 'sales_orders', 'order_no')
     const { rows } = await pool.query(`
       INSERT INTO sales_orders
         (order_no, product_id, product_name, unit, qty, batch_no, buyer, note, created_by)
@@ -85,10 +99,10 @@ router.post('/:id/outbound', requireAuth, requireRole('warehouse'), async (req, 
     const stock = Number(stockRows[0].qty)
     if (qty_actual > stock) {
       await client.query('ROLLBACK')
-      return res.status(400).json({ error: `库存不足（当前 ${stock} ${so.unit}）` })
+      return res.status(400).json({ error: `库存不足（当前 ${stock} ${so.unit})` })
     }
 
-    const outbound_no = genNo('OUT')
+    const outbound_no = await genDailyNo(client, 'OUT', 'outbound_records', 'outbound_no')
 
     await client.query(`
       INSERT INTO outbound_records

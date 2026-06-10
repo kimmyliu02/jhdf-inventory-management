@@ -6,9 +6,23 @@ import { requireAuth, requireRole } from '../middleware/auth.js'
 
 const router = Router()
 
-function genNo(prefix) {
-  const d = new Date().toISOString().slice(0,10).replace(/-/g,'')
-  return `${prefix}-${d}-${Math.floor(Math.random()*9000+1000)}`
+async function genDailyNo(clientOrPool, prefix, tableName, columnName) {
+  const d = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  const likePattern = `${prefix}-${d}-%`
+
+  const { rows } = await clientOrPool.query(
+    `
+    SELECT COUNT(*)::int AS count
+    FROM ${tableName}
+    WHERE ${columnName} LIKE $1
+    `,
+    [likePattern]
+  )
+
+  const nextNum = rows[0].count + 1
+  const seq = String(nextNum).padStart(4, '0')
+
+  return `${prefix}-${d}-${seq}`
 }
 
 // GET /api/purchase-orders?status=pending
@@ -36,7 +50,7 @@ router.post('/', requireAuth, requireRole('company'), async (req, res) => {
     return res.status(400).json({ error: '缺少必填字段' })
   }
   try {
-    const order_no = genNo('PO')
+    const order_no = await genDailyNo(pool, 'PO', 'purchase_orders', 'order_no')
     const { rows } = await pool.query(`
       INSERT INTO purchase_orders
         (order_no, product_id, product_name, spec, unit, qty, batch_no, shipper, expected_date, note, created_by)
@@ -67,7 +81,7 @@ router.post('/:id/inbound', requireAuth, requireRole('warehouse'), async (req, r
     if (!po) return res.status(404).json({ error: '采购单不存在' })
     if (po.status === 'done') return res.status(400).json({ error: '该采购单已完成入库' })
 
-    const inbound_no = genNo('IN')
+    const inbound_no = await genDailyNo(client, 'IN', 'inbound_records', 'inbound_no')
 
     // Create inbound record
     await client.query(`
