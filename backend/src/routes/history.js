@@ -1,15 +1,20 @@
 // backend/src/routes/history.js
+
 import { Router } from 'express'
 import { pool } from '../db.js'
 import { requireAuth } from '../middleware/auth.js'
 
 const router = Router()
 
+// GET /api/history/inbound — inbound records history
 router.get('/inbound', requireAuth, async (req, res) => {
   try {
-    const [rows] = await pool.query(`
-      SELECT ir.*, u.name AS created_by_name,
-             po.order_no AS purchase_order_no, po.shipper
+    const { rows } = await pool.query(`
+      SELECT
+        ir.*,
+        u.name AS created_by_name,
+        po.order_no AS purchase_order_no,
+        po.shipper
       FROM inbound_records ir
       LEFT JOIN users u ON u.id = ir.created_by
       LEFT JOIN purchase_orders po ON po.id = ir.purchase_order_id
@@ -23,11 +28,15 @@ router.get('/inbound', requireAuth, async (req, res) => {
   }
 })
 
+// GET /api/history/outbound — outbound records history
 router.get('/outbound', requireAuth, async (req, res) => {
   try {
-    const [rows] = await pool.query(`
-      SELECT ob.*, u.name AS created_by_name,
-             so.order_no AS sales_order_no, so.buyer
+    const { rows } = await pool.query(`
+      SELECT
+        ob.*,
+        u.name AS created_by_name,
+        so.order_no AS sales_order_no,
+        so.buyer
       FROM outbound_records ob
       LEFT JOIN users u ON u.id = ob.created_by
       LEFT JOIN sales_orders so ON so.id = ob.sales_order_id
@@ -41,10 +50,13 @@ router.get('/outbound', requireAuth, async (req, res) => {
   }
 })
 
+// GET /api/history/processing — processing records history
 router.get('/processing', requireAuth, async (req, res) => {
   try {
-    const [rows] = await pool.query(`
-      SELECT pr.*, u.name AS created_by_name
+    const { rows } = await pool.query(`
+      SELECT
+        pr.*,
+        u.name AS created_by_name
       FROM processing_orders pr
       LEFT JOIN users u ON u.id = pr.created_by
       ORDER BY pr.created_at DESC
