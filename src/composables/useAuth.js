@@ -24,7 +24,7 @@ export function useAuth() {
 export function setupGuard(router) {
   const PUBLIC_ROUTES  = ['/login']
   const COMPANY_ONLY   = ['/purchase', '/sales']
-  const WAREHOUSE_ONLY = ['/inbound', '/outbound', '/process']
+  const WAREHOUSE_ONLY = ['/process']
 
   router.beforeEach((to) => {
     const user = getUser()
