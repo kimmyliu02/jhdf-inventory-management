@@ -33,19 +33,31 @@ onMounted(load)
 const visible = computed(() => allRows.value.filter(r => {
   if (filter.value === 'raw'    && r.product.type !== 'raw')    return false
   if (filter.value === 'packed' && r.product.type !== 'packed') return false
+  if (filter.value === 'loc_raw' && r.location !== '原材料') return false
+  if (filter.value === 'loc_finished' && r.location !== '成品') return false
+  if (filter.value === 'loc_oem' && r.location !== '代加工') return false
   if (filter.value === 'low'    && r.qty >= 20)                  return false
+
   if (search.value) {
     const q = search.value.toLowerCase()
-    if (!r.product.name.includes(search.value) && !r.batch_no.toLowerCase().includes(q)) return false
+    if (
+      !r.product.name.includes(search.value) &&
+      !r.batch_no.toLowerCase().includes(q) &&
+      !(r.location || '').includes(search.value)
+    ) return false
   }
+
   return true
 }))
 
 const FILTERS = [
-  { key: 'all',    label: '全部' },
-  { key: 'raw',    label: '原料' },
+  { key: 'all', label: '全部' },
+  { key: 'raw', label: '原料' },
   { key: 'packed', label: '成品' },
-  { key: 'low',    label: '库存偏低' },
+  { key: 'loc_raw', label: '原材料' },
+  { key: 'loc_finished', label: '成品区' },
+  { key: 'loc_oem', label: '代加工' },
+  { key: 'low', label: '库存偏低' },
 ]
 </script>
 
@@ -92,6 +104,9 @@ const FILTERS = [
             <div style="font-size:14px;font-weight:700">{{ r.product.name }}</div>
             <div style="font-size:12px;color:var(--text3);margin-top:2px">
               {{ r.product.spec }} · 批次：{{ r.batch_no }}
+            </div>
+            <div style="font-size:12px;color:var(--text3);margin-top:2px">
+              存放位置：{{ r.location || '—' }}
             </div>
           </div>
           <span :class="['badge', r.product.type === 'raw' ? 'badge-teal' : 'badge-purple']">

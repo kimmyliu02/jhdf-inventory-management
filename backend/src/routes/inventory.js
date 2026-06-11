@@ -17,7 +17,18 @@ router.get('/', requireAuth, async (req, res) => {
         SUM(l.qty_change)::NUMERIC AS qty,
         p.spec,
         p.unit,
-        p.type
+        p.type,
+        COALESCE(
+          (
+            SELECT ir.location
+            FROM inbound_records ir
+            WHERE ir.product_id = l.product_id
+              AND ir.batch_no = l.batch_no
+            ORDER BY ir.created_at DESC
+            LIMIT 1
+          ),
+          ''
+        ) AS location
       FROM inventory_ledger l
       JOIN products p ON p.id = l.product_id
       GROUP BY l.product_id, l.product_name, l.batch_no, p.spec, p.unit, p.type

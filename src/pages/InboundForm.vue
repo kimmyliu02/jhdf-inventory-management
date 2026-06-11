@@ -9,7 +9,7 @@ const route  = useRoute()
 const order   = ref(null)
 const qty     = ref('')
 const remark  = ref('')
-const location = ref('A区 - 01货架')
+const location = ref('原材料')
 const done    = ref(false)
 const doneNo  = ref('')
 const loading = ref(false)
@@ -101,12 +101,11 @@ async function submit() {
         </div>
 
         <div class="field-group">
-          <label class="field-label">存放库位</label>
+          <label class="field-label">存放位置</label>
           <select v-model="location">
-            <option>A区 - 01货架</option>
-            <option>A区 - 02货架</option>
-            <option>B区 - 01货架</option>
-            <option>B区 - 02货架</option>
+            <option>原材料</option>
+            <option>成品</option>
+            <option>代加工</option>
           </select>
         </div>
 
