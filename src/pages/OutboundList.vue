@@ -19,13 +19,29 @@ async function cancelOrder(o) {
   }
 }
 
+function normalizedBatches(o) {
+  return Array.isArray(o.batches) && o.batches.length > 0
+    ? o.batches.map(b => ({ batch_no: b.batch_no, qty: Number(b.qty) }))
+    : [{ batch_no: o.batch_no, qty: Number(o.qty) }]
+}
+
+function formatBatches(o) {
+  return normalizedBatches(o).map(b => `${b.batch_no} × ${b.qty}`).join('；')
+}
+
 onMounted(async () => {
   try {
     const all = await getSalesOrders('pending')
-    orders.value = await Promise.all(all.map(async o => ({
-      ...o,
-      stock: await getLiveStock(o.product_id, o.batch_no),
-    })))
+    orders.value = await Promise.all(all.map(async o => {
+      const batches = normalizedBatches(o)
+      const stocks = await Promise.all(batches.map(b => getLiveStock(o.product_id, b.batch_no)))
+      return {
+        ...o,
+        batches,
+        batchText: formatBatches({ ...o, batches }),
+        stock: stocks.reduce((sum, qty) => sum + Number(qty || 0), 0),
+      }
+    }))
   } catch (e) {
     error.value = e.message
   } finally {
@@ -65,7 +81,7 @@ onMounted(async () => {
         <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div>
-              <div style="font-size:13px;color:var(--text2)">{{ o.product_name }} 批次：{{ o.batch_no }}</div>
+              <div style="font-size:13px;color:var(--text2)">{{ o.product_name }} 批次：{{ o.batchText }}</div>
               <div style="font-size:12px;margin-top:2px" :style="{ color: o.stock < o.qty ? 'var(--red)' : 'var(--teal)' }">
                 库存：{{ o.stock }} {{ o.unit }}
               </div>

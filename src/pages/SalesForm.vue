@@ -1,14 +1,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getProducts, getAllStock, getLiveStock, createSalesOrder } from '../api/index.js'
+import { getProducts, getAllStock, createSalesOrder } from '../api/index.js'
 
 const router   = useRouter()
 const products = ref([])
 
 const productId = ref('')
-const batchNo   = ref('')
-const qty       = ref('')
 const buyer     = ref('')
 const note      = ref('')
 const done      = ref(false)
@@ -18,41 +16,78 @@ const submitted = ref(false)
 const loading   = ref(false)
 
 const availableBatches = ref([])
-const liveStock        = ref(null)
-const loadingStock     = ref(false)
+const batchRows = ref([{ batch_no: '', qty: '' }])
 
 const selectedProduct = computed(() => products.value.find(p => p.id === Number(productId.value)))
+const totalQty = computed(() => batchRows.value.reduce((sum, r) => sum + (Number(r.qty) || 0), 0))
+const batchSummary = computed(() => batchRows.value
+  .filter(r => r.batch_no && Number(r.qty) > 0)
+  .map(r => `${r.batch_no} × ${r.qty}`)
+  .join('；')
+)
 
 onMounted(async () => {
   products.value = await getProducts()
-  if (products.value[0]) productId.value = String(products.value[0].id)
+  if (products.value[0]) {
+    productId.value = String(products.value[0].id)
+    await onProductChange()
+  }
 })
 
 async function onProductChange() {
-  batchNo.value = ''; liveStock.value = null; availableBatches.value = []
+  batchRows.value = [{ batch_no: '', qty: '' }]
+  availableBatches.value = []
   if (!productId.value) return
   const allStock = await getAllStock()
   availableBatches.value = allStock
-    .filter(s => s.product_id === Number(productId.value) && s.qty > 0)
+    .filter(s => s.product_id === Number(productId.value) && Number(s.qty) > 0)
     .sort((a, b) => a.batch_no.localeCompare(b.batch_no))
 }
 
-async function onBatchChange() {
-  liveStock.value = null
-  if (!productId.value || !batchNo.value) return
-  loadingStock.value = true
-  liveStock.value = await getLiveStock(Number(productId.value), batchNo.value)
-  loadingStock.value = false
+function addBatchRow() {
+  if (batchRows.value.length >= 3) return
+  batchRows.value.push({ batch_no: '', qty: '' })
+}
+
+function removeBatchRow(index) {
+  if (batchRows.value.length <= 1) return
+  batchRows.value.splice(index, 1)
+}
+
+function batchStock(batchNo) {
+  const b = availableBatches.value.find(item => item.batch_no === batchNo)
+  return Number(b?.qty || 0)
+}
+
+function rowHint(row) {
+  if (!row.batch_no) return null
+  const stock = batchStock(row.batch_no)
+  const q = Number(row.qty) || 0
+  if (!q) return `当前库存：${stock} ${selectedProduct.value?.unit || ''}`
+  if (q > stock) return `超出库存 ${q - stock} ${selectedProduct.value?.unit || ''}`
+  if (q === stock) return '将清空该批次全部库存'
+  return `发货后剩余：${stock - q} ${selectedProduct.value?.unit || ''}`
 }
 
 const errors = computed(() => {
   const e = {}
-  if (!productId.value)            e.productId = '请选择商品'
-  if (!batchNo.value.trim())       e.batchNo   = '请选择或填写批次号'
-  if (!qty.value || Number(qty.value) <= 0) e.qty = '请填写有效数量'
-  if (liveStock.value !== null && Number(qty.value) > liveStock.value)
-    e.qty = `数量超出库存（当前 ${liveStock.value} ${selectedProduct.value?.unit}）`
-  if (!buyer.value.trim())         e.buyer     = '请填写购货方'
+  if (!productId.value) e.productId = '请选择商品'
+  if (!buyer.value.trim()) e.buyer = '请填写购货方'
+
+  const validRows = batchRows.value.filter(r => r.batch_no && Number(r.qty) > 0)
+  if (validRows.length === 0) e.batches = '请至少选择 1 个批次并填写数量'
+  if (validRows.length > 3) e.batches = '最多只能选择 3 个批次'
+
+  const names = validRows.map(r => r.batch_no)
+  if (new Set(names).size !== names.length) e.batches = '批次号不能重复'
+
+  for (const r of validRows) {
+    if (Number(r.qty) > batchStock(r.batch_no)) {
+      e.batches = `批次 ${r.batch_no} 数量超出库存`
+      break
+    }
+  }
+
   return e
 })
 const isValid = computed(() => Object.keys(errors.value).length === 0)
@@ -61,32 +96,26 @@ function fieldErr(key) {
   return submitted.value && errors.value[key] ? errors.value[key] : null
 }
 
-const stockHint = computed(() => {
-  if (liveStock.value === null) return null
-  const q = Number(qty.value) || 0
-  if (q <= 0)           return { type: 'hint-ok',   text: `当前库存：${liveStock.value} ${selectedProduct.value?.unit}` }
-  if (q > liveStock.value) return { type: 'hint-bad',  text: `超出库存 ${q - liveStock.value} ${selectedProduct.value?.unit}，无法提交` }
-  if (q === liveStock.value) return { type: 'hint-warn', text: `将清空该批次全部库存` }
-  return { type: 'hint-ok', text: `发货后剩余：${liveStock.value - q} ${selectedProduct.value?.unit}` }
-})
-
 async function submit() {
   submitted.value = true
   if (!isValid.value) return
   const p = selectedProduct.value
+  const batches = batchRows.value
+    .filter(r => r.batch_no && Number(r.qty) > 0)
+    .map(r => ({ batch_no: r.batch_no, qty: Number(r.qty) }))
+
   loading.value = true
   try {
     const res = await createSalesOrder({
       product_id:   p.id,
       product_name: p.name,
       unit:         p.unit,
-      qty:          Number(qty.value),
-      batch_no:     batchNo.value.trim(),
+      batches,
       buyer:        buyer.value.trim(),
       note:         note.value.trim(),
     })
     doneNo.value   = res.order_no
-    doneData.value = { productName: p.name, unit: p.unit, qty: qty.value, batchNo: batchNo.value, buyer: buyer.value, stock: liveStock.value }
+    doneData.value = { productName: p.name, unit: p.unit, qty: totalQty.value, batchText: batchSummary.value, buyer: buyer.value }
     done.value     = true
   } catch (e) {
     alert(e.message)
@@ -97,9 +126,11 @@ async function submit() {
 
 function reset() {
   productId.value = String(products.value[0]?.id || '')
-  batchNo.value = ''; qty.value = ''; buyer.value = ''; note.value = ''
-  liveStock.value = null; availableBatches.value = []
+  batchRows.value = [{ batch_no: '', qty: '' }]
+  buyer.value = ''; note.value = ''
+  availableBatches.value = []
   submitted.value = false; done.value = false
+  onProductChange()
 }
 </script>
 
@@ -118,13 +149,7 @@ function reset() {
         <div class="success-tag" style="background:var(--purple-light);color:var(--purple-dark)">销售单号：{{ doneNo }}</div>
         <div class="info-block" style="width:100%;margin-top:16px">
           <div class="info-row"><span class="info-key">购货方</span><span class="info-val">{{ doneData.buyer }}</span></div>
-          <div class="info-row"><span class="info-key">批次号</span><span class="info-val">{{ doneData.batchNo }}</span></div>
-          <div class="info-row">
-            <span class="info-key">发货后剩余库存</span>
-            <span class="info-val" :style="{ color: doneData.stock - Number(doneData.qty) <= 0 ? 'var(--red)' : 'var(--teal)' }">
-              {{ doneData.stock - Number(doneData.qty) }} {{ doneData.unit }}
-            </span>
-          </div>
+          <div class="info-row"><span class="info-key">批次</span><span class="info-val">{{ doneData.batchText }}</span></div>
         </div>
         <button class="btn btn-purple" style="margin-top:24px" @click="reset"><i class="ti ti-plus" />继续下单</button>
         <button class="btn btn-ghost" @click="router.push('/')">返回首页</button>
@@ -158,31 +183,45 @@ function reset() {
           <div class="info-row"><span class="info-key">单位</span><span class="info-val">{{ selectedProduct.unit }}</span></div>
         </div>
 
-        <div class="field-group">
-          <label class="field-label">批次号<span class="req">*</span></label>
-          <select v-if="availableBatches.length > 0" v-model="batchNo" @change="onBatchChange">
-            <option value="" disabled>请选择批次</option>
-            <option v-for="b in availableBatches" :key="b.batch_no" :value="b.batch_no">
-              {{ b.batch_no }}（库存 {{ b.qty }} {{ selectedProduct?.unit }}）
-            </option>
-          </select>
-          <input v-else type="text" placeholder="请先选择品名，或手动输入批次号" v-model="batchNo" @blur="onBatchChange">
-          <div v-if="fieldErr('batchNo')" class="err-msg">{{ fieldErr('batchNo') }}</div>
+        <div class="section-header" style="background:var(--bg3);margin-top:4px"><i class="ti ti-list-details" />批次与数量（最多 3 个）</div>
+
+        <div v-if="availableBatches.length === 0" class="hint-box hint-warn">
+          <i class="ti ti-alert-triangle" />该商品暂无可用库存
         </div>
 
-        <div class="field-group">
-          <label class="field-label">数量<span class="req">*</span></label>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="number" min="1" placeholder="0" v-model="qty" style="flex:1">
-            <span style="font-size:13px;color:var(--text2);white-space:nowrap">{{ selectedProduct?.unit || '—' }}</span>
+        <div v-for="(row, index) in batchRows" :key="index" class="card" style="padding:12px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-size:13px;font-weight:700">批次 {{ index + 1 }}</div>
+            <button v-if="batchRows.length > 1" class="small-danger-btn" @click="removeBatchRow(index)">删除</button>
           </div>
-          <div v-if="loadingStock" style="font-size:12px;color:var(--text3);margin-top:5px">查询库存中…</div>
-          <div v-else-if="stockHint" :class="['hint-box', stockHint.type]" style="margin-top:6px">
-            <i :class="['ti', stockHint.type==='hint-ok' ? 'ti-circle-check' : stockHint.type==='hint-warn' ? 'ti-alert-triangle' : 'ti-alert-circle']" />
-            {{ stockHint.text }}
+          <div class="field-group" style="margin-bottom:10px">
+            <label class="field-label">批次号</label>
+            <select v-model="row.batch_no">
+              <option value="" disabled>请选择批次</option>
+              <option v-for="b in availableBatches" :key="b.batch_no" :value="b.batch_no">
+                {{ b.batch_no }}（库存 {{ b.qty }} {{ selectedProduct?.unit }}）
+              </option>
+            </select>
           </div>
-          <div v-if="fieldErr('qty')" class="err-msg">{{ fieldErr('qty') }}</div>
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label">数量</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="number" min="1" placeholder="0" v-model="row.qty" style="flex:1">
+              <span style="font-size:13px;color:var(--text2);white-space:nowrap">{{ selectedProduct?.unit || '—' }}</span>
+            </div>
+            <div v-if="rowHint(row)" :class="['hint-box', Number(row.qty) > batchStock(row.batch_no) ? 'hint-bad' : 'hint-ok']" style="margin-top:6px">
+              {{ rowHint(row) }}
+            </div>
+          </div>
         </div>
+
+        <button v-if="batchRows.length < 3" class="btn btn-ghost" style="margin-top:0;margin-bottom:12px" @click="addBatchRow">
+          <i class="ti ti-plus" />添加批次
+        </button>
+        <div class="hint-box hint-ok" style="margin-bottom:14px">
+          <i class="ti ti-calculator" />合计：{{ totalQty }} {{ selectedProduct?.unit || '' }}
+        </div>
+        <div v-if="fieldErr('batches')" class="err-msg" style="margin-bottom:12px">{{ fieldErr('batches') }}</div>
 
         <div class="section-header" style="background:var(--bg3);margin-top:4px"><i class="ti ti-building-store" />购货方信息</div>
 

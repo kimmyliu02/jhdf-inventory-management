@@ -16,11 +16,24 @@ const done    = ref(false)
 const doneNo  = ref('')
 const loading = ref(false)
 
+function normalizedBatches(o) {
+  return Array.isArray(o?.batches) && o.batches.length > 0
+    ? o.batches.map(b => ({ batch_no: b.batch_no, qty: Number(b.qty) }))
+    : [{ batch_no: o?.batch_no, qty: Number(o?.qty || 0) }]
+}
+
+function formatBatches(o) {
+  return normalizedBatches(o).map(b => `${b.batch_no} × ${b.qty}`).join('；')
+}
+
 onMounted(async () => {
   const orders = await getSalesOrders('pending')
   order.value  = orders.find(o => o.id === Number(route.params.id))
   if (order.value) {
-    stock.value = await getLiveStock(order.value.product_id, order.value.batch_no)
+    const batches = normalizedBatches(order.value)
+    const stocks = await Promise.all(batches.map(b => getLiveStock(order.value.product_id, b.batch_no)))
+    stock.value = stocks.reduce((sum, qty) => sum + Number(qty || 0), 0)
+    qty.value = String(order.value.qty)
   }
 })
 
@@ -87,7 +100,7 @@ async function submit() {
         <div class="section-header"><i class="ti ti-file-text" />销售单信息（只读）</div>
         <div class="info-block">
           <div class="info-row"><span class="info-key">品名</span><span class="info-val">{{ order.product_name }}</span></div>
-          <div class="info-row"><span class="info-key">批次号</span><span class="info-val">{{ order.batch_no }}</span></div>
+          <div class="info-row"><span class="info-key">批次号</span><span class="info-val">{{ formatBatches(order) }}</span></div>
           <div class="info-row"><span class="info-key">单位</span><span class="info-val">{{ order.unit }}</span></div>
           <div class="info-row"><span class="info-key">应发数量</span><span class="info-val" style="color:var(--purple)">{{ order.qty }} {{ order.unit }}</span></div>
           <div class="info-row">
