@@ -31,8 +31,27 @@ const outputRows = ref([
   },
 ])
 
-const rawProducts = computed(() => products.value.filter(p => p.type === 'raw'))
-const packedProducts = computed(() => products.value.filter(p => p.type === 'packed'))
+function uniqueProducts(list) {
+  const map = new Map()
+
+  for (const p of list) {
+    const key = `${p.name}|${p.spec}|${p.unit}|${p.type}`
+    if (!map.has(key)) {
+      map.set(key, p)
+    }
+  }
+
+  return Array.from(map.values())
+}
+
+const rawProducts = computed(() =>
+  uniqueProducts(products.value.filter(p => p.type === 'raw'))
+)
+
+const packedProducts = computed(() =>
+  uniqueProducts(products.value.filter(p => p.type === 'packed'))
+)
+
 const outputProduct = computed(() => products.value.find(p => p.id === Number(outputProductId.value)))
 const outputUnit = computed(() => outputProduct.value?.unit || '袋')
 
