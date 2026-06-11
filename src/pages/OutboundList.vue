@@ -8,17 +8,6 @@ const orders  = ref([])
 const loading = ref(true)
 const error   = ref('')
 
-async function cancelOrder(o) {
-  if (!confirm(`确定取消销售单 ${o.order_no} 吗？`)) return
-
-  try {
-    await cancelSalesOrder(o.id)
-    orders.value = orders.value.filter(item => item.id !== o.id)
-  } catch (e) {
-    alert(e.message)
-  }
-}
-
 function normalizedBatches(o) {
   return Array.isArray(o.batches) && o.batches.length > 0
     ? o.batches.map(b => ({ batch_no: b.batch_no, qty: Number(b.qty) }))
@@ -48,6 +37,17 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+async function cancelOrder(o) {
+  if (!confirm(`确定取消销售单 ${o.order_no} 吗？`)) return
+
+  try {
+    await cancelSalesOrder(o.id)
+    orders.value = orders.value.filter(item => item.id !== o.id)
+  } catch (e) {
+    alert(e.message)
+  }
+}
 </script>
 
 <template>

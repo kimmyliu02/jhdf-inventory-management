@@ -76,6 +76,23 @@ const roleLabel = computed(() => {
 
         <div style="font-size:11px;font-weight:500;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;margin:0 0 8px 2px">查询</div>
         <div style="border-radius:var(--radius);overflow:hidden;border:0.5px solid var(--border)">
+          <div class="menu-item" @click="router.push('/inbound')">
+            <div class="menu-icon icon-teal"><i class="ti ti-arrow-bar-to-down" /></div>
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:500">待入库采购单</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:1px">查看并取消未入库采购单</div>
+            </div>
+            <i class="ti ti-chevron-right" style="font-size:16px;color:var(--text3)" />
+          </div>
+
+          <div class="menu-item" @click="router.push('/outbound')">
+            <div class="menu-icon icon-purple"><i class="ti ti-truck" /></div>
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:500">待出库销售单</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:1px">查看并取消未出库销售单</div>
+            </div>
+            <i class="ti ti-chevron-right" style="font-size:16px;color:var(--text3)" />
+          </div>
           <div class="menu-item" @click="router.push('/inventory')">
             <div class="menu-icon icon-blue"><i class="ti ti-chart-bar" /></div>
             <div style="flex:1"><div style="font-size:14px;font-weight:500">实时库存总览</div><div style="font-size:12px;color:var(--text3);margin-top:1px">查看所有商品当前库存</div></div>

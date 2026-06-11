@@ -123,3 +123,12 @@ export async function cancelPurchaseOrder(orderId) {
 export async function cancelSalesOrder(orderId) {
   return api('DELETE', `/api/sales-orders/${orderId}`)
 }
+
+// cancel order option
+export async function cancelPurchaseOrder(orderId) {
+  return api('DELETE', `/api/purchase-orders/${orderId}`)
+}
+
+export async function cancelSalesOrder(orderId) {
+  return api('DELETE', `/api/sales-orders/${orderId}`)
+}

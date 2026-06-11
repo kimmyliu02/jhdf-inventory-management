@@ -216,7 +216,7 @@ router.post('/:id/outbound', requireAuth, requireRole('warehouse'), async (req, 
 })
 
 // DELETE /api/sales-orders/:id — cancel pending sales order
-router.delete('/:id', requireAuth, requireRole('company'), async (req, res) => {
+router.delete('/:id', requireAuth, requireRole('company', 'warehouse'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT * FROM sales_orders WHERE id = $1`,

@@ -8,6 +8,16 @@ const orders = ref([])
 const loading = ref(true)
 const error = ref('')
 
+onMounted(async () => {
+  try {
+    orders.value = await getPurchaseOrders('pending')
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+})
+
 async function cancelOrder(o) {
   if (!confirm(`确定取消采购单 ${o.order_no} 吗？`)) return
 
@@ -18,16 +28,6 @@ async function cancelOrder(o) {
     alert(e.message)
   }
 }
-
-onMounted(async () => {
-  try {
-    orders.value = await getPurchaseOrders('pending')
-  } catch (e) {
-    error.value = e.message
-  } finally {
-    loading.value = false
-  }
-})
 </script>
 
 <template>
@@ -53,7 +53,7 @@ onMounted(async () => {
             <div style="font-size:15px;font-weight:700">{{ o.order_no }}</div>
             <div style="font-size:12px;color:var(--text3);margin-top:3px">发货方：{{ o.shipper }}</div>
           </div>
-          <div style="display:flex;gap:6px;align-items:center">
+         <div style="display:flex;gap:6px;align-items:center">
             <span class="badge badge-amber">待入库</span>
             <button class="small-danger-btn" @click.stop="cancelOrder(o)">取消</button>
           </div>
