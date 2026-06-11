@@ -151,6 +151,16 @@ export async function initSchema() {
       qty                 NUMERIC NOT NULL,
       created_at          TIMESTAMPTZ DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS processing_output_batches (
+      id                  SERIAL PRIMARY KEY,
+      processing_order_id INTEGER REFERENCES processing_orders(id) ON DELETE CASCADE,
+      product_id          INTEGER REFERENCES products(id),
+      product_name        TEXT NOT NULL,
+      batch_no            TEXT NOT NULL,
+      qty                 NUMERIC NOT NULL,
+      created_at          TIMESTAMPTZ DEFAULT NOW()
+    );
     
     CREATE INDEX IF NOT EXISTS idx_ledger_product ON inventory_ledger(product_id, batch_no);
   `)

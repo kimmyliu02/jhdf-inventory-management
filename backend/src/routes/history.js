@@ -62,7 +62,61 @@ router.get('/processing', requireAuth, async (req, res) => {
       ORDER BY pr.created_at DESC
       LIMIT 100
     `)
-    res.json(rows)
+
+    const ids = rows.map(r => r.id)
+    if (ids.length === 0) return res.json([])
+
+    const { rows: inputRows } = await pool.query(`
+      SELECT
+        processing_order_id,
+        product_id,
+        product_name,
+        batch_no,
+        qty
+      FROM processing_input_batches
+      WHERE processing_order_id = ANY($1::int[])
+      ORDER BY id ASC
+    `, [ids])
+
+    const { rows: outputRows } = await pool.query(`
+      SELECT
+        processing_order_id,
+        product_id,
+        product_name,
+        batch_no,
+        qty
+      FROM processing_output_batches
+      WHERE processing_order_id = ANY($1::int[])
+      ORDER BY id ASC
+    `, [ids])
+
+    const inputMap = {}
+    for (const item of inputRows) {
+      if (!inputMap[item.processing_order_id]) inputMap[item.processing_order_id] = []
+      inputMap[item.processing_order_id].push({
+        product_id: item.product_id,
+        product_name: item.product_name,
+        batch_no: item.batch_no,
+        qty: Number(item.qty),
+      })
+    }
+
+    const outputMap = {}
+    for (const item of outputRows) {
+      if (!outputMap[item.processing_order_id]) outputMap[item.processing_order_id] = []
+      outputMap[item.processing_order_id].push({
+        product_id: item.product_id,
+        product_name: item.product_name,
+        batch_no: item.batch_no,
+        qty: Number(item.qty),
+      })
+    }
+
+    res.json(rows.map(r => ({
+      ...r,
+      input_items: inputMap[r.id] || [],
+      output_batches: outputMap[r.id] || [],
+    })))
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: '服务器错误' })
