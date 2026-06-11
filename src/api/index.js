@@ -62,6 +62,10 @@ export async function getProducts() {
   return api('GET', '/api/products')
 }
 
+export async function createProduct(data) {
+  return api('POST', '/api/products', data)
+}
+
 // Inventory
 export async function getAllStock() {
   return api('GET', '/api/inventory')

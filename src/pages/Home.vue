@@ -93,6 +93,14 @@ const roleLabel = computed(() => {
             </div>
             <i class="ti ti-chevron-right" style="font-size:16px;color:var(--text3)" />
           </div>
+          <div class="menu-item" @click="router.push('/products/new')">
+            <div class="menu-icon icon-blue"><i class="ti ti-package-plus" /></div>
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:500">新增品名</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:1px">新增原料或成品</div>
+            </div>
+            <i class="ti ti-chevron-right" style="font-size:16px;color:var(--text3)" />
+          </div>
           <div class="menu-item" @click="router.push('/inventory')">
             <div class="menu-icon icon-blue"><i class="ti ti-chart-bar" /></div>
             <div style="flex:1"><div style="font-size:14px;font-weight:500">实时库存总览</div><div style="font-size:12px;color:var(--text3);margin-top:1px">查看所有商品当前库存</div></div>
