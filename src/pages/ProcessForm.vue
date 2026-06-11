@@ -1,18 +1,18 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { getProducts, getAllStock, getLiveStock, createProcessing } from '../api/index.js'
+import { getProducts, getAllStock, createProcessing } from '../api/index.js'
 
 const router = useRouter()
 
 const products      = ref([])
 const inProductId   = ref('')
 const outProductId  = ref('')
-const inQty         = ref('')
 const outQty        = ref('')
-const inBatchNo     = ref('')
+const outBatchNo    = ref('')
+const note          = ref('')
 const availableBatches = ref([])
-const liveStock     = ref(null)
+const inputRows     = ref([{ batch_no: '', qty: '' }])
 const done          = ref(false)
 const result        = ref({})
 const loading       = ref(false)
@@ -23,6 +23,12 @@ const inProduct      = computed(() => products.value.find(p => p.id === Number(i
 const outProduct     = computed(() => products.value.find(p => p.id === Number(outProductId.value)))
 const inUnit         = computed(() => inProduct.value?.unit  || '包')
 const outUnit        = computed(() => outProduct.value?.unit || '袋')
+const totalInQty     = computed(() => inputRows.value.reduce((sum, r) => sum + (Number(r.qty) || 0), 0))
+const inputSummary   = computed(() => inputRows.value
+  .filter(r => r.batch_no && Number(r.qty) > 0)
+  .map(r => `${r.batch_no} × ${r.qty}`)
+  .join('；')
+)
 
 onMounted(async () => {
   products.value = await getProducts()
@@ -33,54 +39,88 @@ onMounted(async () => {
 })
 
 watch(inProductId, async (id) => {
-  inBatchNo.value = ''; liveStock.value = null; availableBatches.value = []
+  inputRows.value = [{ batch_no: '', qty: '' }]
+  availableBatches.value = []
   if (!id) return
   const allStock = await getAllStock()
   availableBatches.value = allStock
-    .filter(s => s.product_id === Number(id) && s.qty > 0)
+    .filter(s => s.product_id === Number(id) && Number(s.qty) > 0)
     .sort((a, b) => a.batch_no.localeCompare(b.batch_no))
-  if (availableBatches.value.length === 1) inBatchNo.value = availableBatches.value[0].batch_no
+  if (availableBatches.value.length === 1) inputRows.value[0].batch_no = availableBatches.value[0].batch_no
 })
 
-watch(inBatchNo, async (batchNo) => {
-  if (!batchNo || !inProductId.value) { liveStock.value = null; return }
-  liveStock.value = await getLiveStock(Number(inProductId.value), batchNo)
-})
-
-function handleInQty(val) {
-  inQty.value = val
-  const v  = parseFloat(val) || 0
+watch(totalInQty, (v) => {
   const op = outProduct.value
   if (v > 0 && op) {
     const size = parseFloat(op.spec) || 5
     const bags = Math.floor(v / size)
     if (bags > 0) outQty.value = String(bags)
   }
+})
+
+function addInputRow() {
+  if (inputRows.value.length >= 3) return
+  inputRows.value.push({ batch_no: '', qty: '' })
+}
+
+function removeInputRow(index) {
+  if (inputRows.value.length <= 1) return
+  inputRows.value.splice(index, 1)
+}
+
+function batchStock(batchNo) {
+  const b = availableBatches.value.find(item => item.batch_no === batchNo)
+  return Number(b?.qty || 0)
+}
+
+function rowHint(row) {
+  if (!row.batch_no) return null
+  const stock = batchStock(row.batch_no)
+  const q = Number(row.qty) || 0
+  if (!q) return `当前库存：${stock} ${inUnit.value}`
+  if (q > stock) return `超出库存 ${q - stock} ${inUnit.value}`
+  if (q === stock) return '将清空该批次全部库存'
+  return `消耗后剩余：${stock - q} ${inUnit.value}`
+}
+
+function validate() {
+  const rows = inputRows.value.filter(r => r.batch_no && Number(r.qty) > 0)
+  if (!inProduct.value || !outProduct.value) return '请选择商品'
+  if (rows.length === 0) return '请至少选择 1 个原料批次并填写消耗数量'
+  if (rows.length > 3) return '最多只能选择 3 个原料批次'
+  if (new Set(rows.map(r => r.batch_no)).size !== rows.length) return '原料批次不能重复'
+  for (const r of rows) {
+    if (Number(r.qty) > batchStock(r.batch_no)) return `批次 ${r.batch_no} 消耗数量超出库存`
+  }
+  if (!Number(outQty.value) || Number(outQty.value) <= 0) return '请填写产出数量'
+  return ''
 }
 
 async function submit() {
-  const qi = parseInt(inQty.value)
-  const qo = parseInt(outQty.value)
-  if (!qi || !qo)                             return alert('请填写消耗量和产出量')
-  if (!inProduct.value || !outProduct.value)  return alert('请选择商品')
-  if (!inBatchNo.value)                       return alert('请选择原料批次')
+  const error = validate()
+  if (error) return alert(error)
+
+  const inputBatches = inputRows.value
+    .filter(r => r.batch_no && Number(r.qty) > 0)
+    .map(r => ({ batch_no: r.batch_no, qty: Number(r.qty) }))
 
   loading.value = true
   try {
     const res = await createProcessing({
       in_product_id:   inProduct.value.id,
       in_product_name: inProduct.value.name,
-      in_batch_no:     inBatchNo.value,
-      in_qty:          qi,
+      input_batches:   inputBatches,
       out_product_id:   outProduct.value.id,
       out_product_name: outProduct.value.name,
-      out_batch_no:     '',
-      out_qty:          qo,
+      out_batch_no:     outBatchNo.value.trim(),
+      out_qty:          Number(outQty.value),
+      note:             note.value.trim(),
     })
     result.value = {
       procNo:  res.proc_no,
-      inName:  inProduct.value.name,  inQty:  qi,  inUnit:  inUnit.value,
-      outName: outProduct.value.name, outQty: qo,  outUnit: outUnit.value,
+      inName:  inProduct.value.name,  inQty:  totalInQty.value,  inUnit:  inUnit.value,
+      inputText: inputSummary.value,
+      outName: outProduct.value.name, outQty: Number(outQty.value),  outUnit: outUnit.value,
     }
     done.value = true
   } catch (e) {
@@ -91,8 +131,8 @@ async function submit() {
 }
 
 function reset() {
-  inQty.value = ''; outQty.value = ''
-  inBatchNo.value = ''; liveStock.value = null
+  outQty.value = ''; outBatchNo.value = ''; note.value = ''
+  inputRows.value = [{ batch_no: '', qty: '' }]
   done.value = false
 }
 </script>
@@ -111,6 +151,10 @@ function reset() {
         <div class="success-sub">库存已同步更新</div>
         <div class="success-tag" style="background:var(--amber-light);color:var(--amber-dark)">加工单号：{{ result.procNo }}</div>
         <div class="info-block" style="width:100%;margin-top:14px">
+          <div class="info-row">
+            <span class="info-key">原料批次</span>
+            <span class="info-val">{{ result.inputText }}</span>
+          </div>
           <div class="info-row">
             <span class="info-key">{{ result.inName }}</span>
             <span style="font-weight:700;color:var(--red)">−{{ result.inQty }} {{ result.inUnit }}</span>
@@ -142,35 +186,42 @@ function reset() {
           </select>
         </div>
 
-        <div class="field-group">
-          <label class="field-label">原料批次<span class="req">*</span></label>
-          <select v-if="availableBatches.length > 0" v-model="inBatchNo">
-            <option value="" disabled>请选择批次</option>
-            <option v-for="b in availableBatches" :key="b.batch_no" :value="b.batch_no">
-              {{ b.batch_no }}（库存 {{ b.qty }} {{ inUnit }}）
-            </option>
-          </select>
-          <div v-else style="font-size:13px;color:var(--text3);padding:10px 12px;background:var(--bg3);border-radius:var(--radius-sm)">
-            <i class="ti ti-alert-triangle" style="margin-right:4px;color:var(--amber)" />该原料暂无库存，请先完成入库
+        <div v-if="availableBatches.length === 0" style="font-size:13px;color:var(--text3);padding:10px 12px;background:var(--bg3);border-radius:var(--radius-sm);margin-bottom:14px">
+          <i class="ti ti-alert-triangle" style="margin-right:4px;color:var(--amber)" />该原料暂无库存，请先完成入库
+        </div>
+
+        <div v-for="(row, index) in inputRows" :key="index" class="card" style="padding:12px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-size:13px;font-weight:700">原料批次 {{ index + 1 }}</div>
+            <button v-if="inputRows.length > 1" class="small-danger-btn" @click="removeInputRow(index)">删除</button>
+          </div>
+          <div class="field-group" style="margin-bottom:10px">
+            <label class="field-label">批次号</label>
+            <select v-model="row.batch_no">
+              <option value="" disabled>请选择批次</option>
+              <option v-for="b in availableBatches" :key="b.batch_no" :value="b.batch_no">
+                {{ b.batch_no }}（库存 {{ b.qty }} {{ inUnit }}）
+              </option>
+            </select>
+          </div>
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label">消耗数量</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="number" min="0" placeholder="0" v-model="row.qty" style="flex:1">
+              <span style="font-size:13px;color:var(--text2)">{{ inUnit }}</span>
+            </div>
+            <div v-if="rowHint(row)" :class="['hint-box', Number(row.qty) > batchStock(row.batch_no) ? 'hint-bad' : 'hint-ok']" style="margin-top:6px">
+              {{ rowHint(row) }}
+            </div>
           </div>
         </div>
 
-        <div v-if="liveStock !== null" style="margin-bottom:14px">
-          <div :class="['hint-box', parseInt(inQty) > liveStock ? 'hint-bad' : 'hint-ok']">
-            <i :class="['ti', parseInt(inQty) > liveStock ? 'ti-alert-circle' : 'ti-package']" />
-            当前库存：{{ liveStock }} {{ inUnit }}
-            <span v-if="parseInt(inQty) > 0 && parseInt(inQty) <= liveStock" style="margin-left:6px">
-              · 消耗后剩余 {{ liveStock - parseInt(inQty) }} {{ inUnit }}
-            </span>
-          </div>
-        </div>
+        <button v-if="inputRows.length < 3" class="btn btn-ghost" style="margin-top:0;margin-bottom:12px" @click="addInputRow">
+          <i class="ti ti-plus" />添加原料批次
+        </button>
 
-        <div class="field-group">
-          <label class="field-label">消耗数量<span class="req">*</span></label>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="number" min="0" placeholder="0" :value="inQty" @input="handleInQty($event.target.value)" style="flex:1">
-            <span style="font-size:13px;color:var(--text2)">{{ inUnit }}</span>
-          </div>
+        <div class="hint-box hint-ok" style="margin-bottom:14px">
+          <i class="ti ti-calculator" />原料消耗合计：{{ totalInQty }} {{ inUnit }}
         </div>
 
         <div style="text-align:center;padding:4px 0 10px;font-size:22px;color:var(--text3)">
@@ -189,6 +240,11 @@ function reset() {
         </div>
 
         <div class="field-group">
+          <label class="field-label">产出批次号（选填）</label>
+          <input type="text" placeholder="不填则系统自动生成" v-model="outBatchNo">
+        </div>
+
+        <div class="field-group">
           <label class="field-label">产出数量<span class="req">*</span></label>
           <div style="display:flex;gap:8px;align-items:center">
             <input type="number" min="0" placeholder="0" v-model="outQty" style="flex:1">
@@ -198,7 +254,7 @@ function reset() {
 
         <div class="field-group">
           <label class="field-label">损耗 / 备注</label>
-          <textarea rows="2" placeholder="如有损耗请注明原因…" />
+          <textarea rows="2" placeholder="如有损耗请注明原因…" v-model="note" />
         </div>
 
         <button class="btn btn-amber" @click="submit" :disabled="loading">
