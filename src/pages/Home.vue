@@ -96,7 +96,7 @@ const roleLabel = computed(() => {
           <div class="menu-item" @click="router.push('/products/new')">
             <div class="menu-icon icon-blue"><i class="ti ti-tag-plus" /></div>
             <div style="flex:1">
-              <div style="font-size:14px;font-weight:500">新增品名</div>
+              <div style="font-size:14px;font-weight:500">品名管理</div>
               <div style="font-size:12px;color:var(--text3);margin-top:1px">新增原料或成品</div>
             </div>
             <i class="ti ti-chevron-right" style="font-size:16px;color:var(--text3)" />
