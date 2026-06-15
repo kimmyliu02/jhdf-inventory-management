@@ -105,7 +105,7 @@ router.post('/', requireAuth, requireRole('company'), async (req, res) => {
       }
     }
 
-    const order_no = genNo('SO')
+    const order_no = await genDailyNo(pool, 'SO', 'sales_orders', 'order_no')
     const mainBatchNo = batchList.map(b => b.batch_no).join(' / ')
 
     const { rows } = await pool.query(`

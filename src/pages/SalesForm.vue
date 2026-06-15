@@ -36,9 +36,12 @@ onMounted(async () => {
 
 async function onProductChange() {
   batchRows.value = [{ batch_no: '', qty: '' }]
-  availableBatches.value = []
-  if (!productId.value) return
+  if (!productId.value) {
+    availableBatches.value = []
+    return
+  }
   const allStock = await getAllStock()
+  // 只在数据回来后才赋值，避免闪烁
   availableBatches.value = allStock
     .filter(s => s.product_id === Number(productId.value) && Number(s.qty) > 0)
     .sort((a, b) => a.batch_no.localeCompare(b.batch_no))
