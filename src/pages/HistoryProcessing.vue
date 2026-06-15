@@ -46,17 +46,25 @@ function fmtDate(d) {
         </div>
         <div style="background:var(--teal-light);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:6px">
           <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.04em;margin-bottom:6px">原料消耗</div>
-          <!-- 将 "品名:批次×数量,..." 格式拆分成独立行 -->
-          <template v-for="(seg, idx) in r.in_batch_no.split('，')" :key="idx">
-            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:0.5px solid rgba(0,0,0,.06)">
-              <div>
-                <div style="font-size:13px;font-weight:500">{{ seg.trim().split(':')[0] }}</div>
-                <div style="font-size:11px;color:var(--text3);margin-top:1px">批次 {{ seg.trim().split(':')[1]?.split('×')[0] }}</div>
+          <!-- in_batch_no 格式: "品名:批次×数量，品名:批次×数量" -->
+          <template v-for="(seg, idx) in r.in_batch_no.split('，').filter(s => s.trim())" :key="idx">
+            <div style="padding:5px 0;" :style="idx < r.in_batch_no.split('，').filter(s=>s.trim()).length - 1 ? 'border-bottom:0.5px solid rgba(0,0,0,.08)' : ''">
+              <!-- 品名：取最后一个冒号之前的部分（即 "品名" 段） -->
+              <div style="font-size:13px;font-weight:600;color:var(--text2)">
+                {{ seg.trim().split(':').slice(0, -1).join(':') }}
               </div>
-              <div style="font-size:13px;font-weight:700;color:var(--red)">−{{ seg.trim().split('×')[1] }}</div>
+              <!-- 批次 + 数量：最后一个冒号之后，格式 批次×数量 -->
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">
+                <div style="font-size:12px;color:var(--text3)">
+                  批次 {{ seg.trim().split(':').slice(-1)[0]?.split('×')[0] }}
+                </div>
+                <div style="font-size:13px;font-weight:700;color:var(--red)">
+                  −{{ seg.trim().split('×').slice(-1)[0] }}
+                </div>
+              </div>
             </div>
           </template>
-          <div style="display:flex;justify-content:space-between;padding-top:6px;font-size:12px;color:var(--text3)">
+          <div style="display:flex;justify-content:space-between;padding-top:6px;margin-top:2px;border-top:0.5px solid rgba(0,0,0,.1);font-size:12px;color:var(--text3)">
             <span>合计消耗</span>
             <span style="font-weight:700;color:var(--red)">−{{ r.in_qty }}</span>
           </div>
