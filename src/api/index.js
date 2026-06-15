@@ -62,8 +62,20 @@ export async function getProducts() {
   return api('GET', '/api/products')
 }
 
+export async function getAllProducts() {
+  return api('GET', '/api/products/all')
+}
+
 export async function createProduct(data) {
   return api('POST', '/api/products', data)
+}
+
+export async function deactivateProduct(id) {
+  return api('PATCH', `/api/products/${id}/deactivate`)
+}
+
+export async function reactivateProduct(id) {
+  return api('PATCH', `/api/products/${id}/reactivate`)
 }
 
 // Inventory
