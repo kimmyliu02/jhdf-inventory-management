@@ -94,7 +94,7 @@ const roleLabel = computed(() => {
             <i class="ti ti-chevron-right" style="font-size:16px;color:var(--text3)" />
           </div>
           <div class="menu-item" @click="router.push('/products/new')">
-            <div class="menu-icon icon-blue"><i class="ti ti-package-plus" /></div>
+            <div class="menu-icon icon-blue"><i class="ti ti-tag-plus" /></div>
             <div style="flex:1">
               <div style="font-size:14px;font-weight:500">新增品名</div>
               <div style="font-size:12px;color:var(--text3);margin-top:1px">新增原料或成品</div>
@@ -199,6 +199,11 @@ const roleLabel = computed(() => {
           <div class="menu-item" @click="router.push('/history/inbound')">
             <div class="menu-icon icon-teal"><i class="ti ti-history" /></div>
             <div style="flex:1"><div style="font-size:14px;font-weight:500">入库历史</div><div style="font-size:12px;color:var(--text3);margin-top:1px">查看所有入库记录</div></div>
+            <i class="ti ti-chevron-right" style="font-size:16px;color:var(--text3)" />
+          </div>
+          <div class="menu-item" @click="router.push('/history/outbound')">
+            <div class="menu-icon icon-purple"><i class="ti ti-history" /></div>
+            <div style="flex:1"><div style="font-size:14px;font-weight:500">出库历史</div><div style="font-size:12px;color:var(--text3);margin-top:1px">查看所有出库记录</div></div>
             <i class="ti ti-chevron-right" style="font-size:16px;color:var(--text3)" />
           </div>
           <div class="menu-item" @click="router.push('/history/processing')">
