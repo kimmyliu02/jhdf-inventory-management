@@ -35,6 +35,7 @@ router.post('/', requireAuth, requireRole('warehouse'), async (req, res) => {
     output_product_id,
     output_product_name,
     output_batches,
+    output_location,
     note,
   } = req.body
 
@@ -105,8 +106,8 @@ router.post('/', requireAuth, requireRole('warehouse'), async (req, res) => {
     await client.query(`
       INSERT INTO processing_orders
         (proc_no, in_product_id, in_product_name, in_batch_no, in_qty,
-         out_product_id, out_product_name, out_batch_no, out_qty, note, created_by)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+         out_product_id, out_product_name, out_batch_no, out_qty, out_location, note, created_by)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
     `, [
       proc_no,
       inputItems[0].product_id,
@@ -117,6 +118,7 @@ router.post('/', requireAuth, requireRole('warehouse'), async (req, res) => {
       output_product_name,
       outputBatchSummary,
       totalOutQty,
+      output_location || '',
       note || '',
       req.user.id,
     ])

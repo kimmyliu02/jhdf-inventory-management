@@ -115,6 +115,7 @@ export async function initSchema() {
       out_product_name TEXT NOT NULL,
       out_batch_no     TEXT NOT NULL,
       out_qty          NUMERIC NOT NULL,
+      out_location     TEXT DEFAULT '',
       note             TEXT DEFAULT '',
       created_by       INTEGER REFERENCES users(id),
       created_at       TIMESTAMPTZ DEFAULT NOW()

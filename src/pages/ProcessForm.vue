@@ -2,12 +2,17 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getProducts, getAllStock, getLiveStock, createProcessing } from '../api/index.js'
+import { useAuth } from '../composables/useAuth.js'
+
+const { getUser } = useAuth()
+const currentUser = getUser()
 
 const router = useRouter()
 
 const products = ref([])
 const allStock = ref([])
 const outputProductId = ref('')
+const outputLocation = ref('成品仓')
 const note = ref('')
 const done = ref(false)
 const result = ref({})
@@ -229,6 +234,7 @@ async function submit() {
       output_product_id: outputProduct.value.id,
       output_product_name: outputProduct.value.name,
       output_batches: cleanOutputs,
+      output_location: outputLocation.value,
       note: note.value.trim(),
     })
 
@@ -254,6 +260,7 @@ async function submit() {
 
 function reset() {
   note.value = ''
+  outputLocation.value = '成品仓'
   inputRows.value = [{
     product_id: '',
     product_name: '',
@@ -465,8 +472,23 @@ function reset() {
         </div>
 
         <div class="field-group">
+          <label class="field-label">成品存放位置<span class="req">*</span></label>
+          <select v-model="outputLocation">
+            <option>成品仓</option>
+            <option>原材料</option>
+            <option>冷库</option>
+            <option>临时区</option>
+          </select>
+        </div>
+
+        <div class="field-group">
           <label class="field-label">损耗 / 备注</label>
           <textarea rows="2" placeholder="如有损耗请注明原因…" v-model="note" />
+        </div>
+
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3);margin-bottom:14px;padding:8px 12px;background:var(--bg3);border-radius:var(--radius-sm)">
+          <i class="ti ti-user" style="font-size:14px" />
+          录入人：<span style="font-weight:600;color:var(--text2)">{{ currentUser?.name }}</span>
         </div>
 
         <button class="btn btn-amber" @click="submit" :disabled="loading">

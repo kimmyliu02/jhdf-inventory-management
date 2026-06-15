@@ -2,6 +2,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { getSalesOrders, confirmOutbound, getLiveStock } from '../api/index.js'
+import { useAuth } from '../composables/useAuth.js'
+
+const { getUser } = useAuth()
+const currentUser = getUser()
 
 const router = useRouter()
 const route  = useRoute()
@@ -137,6 +141,11 @@ async function submit() {
         <div class="field-group">
           <label class="field-label">备注</label>
           <textarea rows="2" placeholder="如有差异请说明…" v-model="remark" />
+        </div>
+
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3);margin-bottom:14px;padding:8px 12px;background:var(--bg3);border-radius:var(--radius-sm)">
+          <i class="ti ti-user" style="font-size:14px" />
+          录入人：<span style="font-weight:600;color:var(--text2)">{{ currentUser?.name }}</span>
         </div>
 
         <button class="btn btn-purple" @click="submit" :disabled="loading">

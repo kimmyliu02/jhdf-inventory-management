@@ -65,6 +65,7 @@ function fmtDate(d) {
         <div style="background:var(--purple-light);border-radius:var(--radius-sm);padding:4px 12px;margin-top:6px">
           <div class="info-row"><span class="info-key">成品</span><span class="info-val">{{ r.out_product_name }}</span></div>
           <div class="info-row"><span class="info-key">批次</span><span class="info-val">{{ r.out_batch_no }}</span></div>
+          <div v-if="r.out_location" class="info-row"><span class="info-key">存放位置</span><span class="info-val">{{ r.out_location }}</span></div>
           <div class="info-row" style="border:none"><span class="info-key">产出数量</span><span style="font-weight:700;color:var(--teal)">+{{ r.out_qty }}</span></div>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-top:8px">
