@@ -44,10 +44,22 @@ function fmtDate(d) {
           <div style="font-size:14px;font-weight:700">{{ r.proc_no }}</div>
           <span class="badge badge-amber">分装</span>
         </div>
-        <div style="background:var(--teal-light);border-radius:var(--radius-sm);padding:4px 12px;margin-bottom:6px">
-          <div class="info-row"><span class="info-key">原料</span><span class="info-val">{{ r.in_product_name }}</span></div>
-          <div class="info-row"><span class="info-key">批次</span><span class="info-val">{{ r.in_batch_no }}</span></div>
-          <div class="info-row" style="border:none"><span class="info-key">消耗数量</span><span style="font-weight:700;color:var(--red)">−{{ r.in_qty }}</span></div>
+        <div style="background:var(--teal-light);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:6px">
+          <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.04em;margin-bottom:6px">原料消耗</div>
+          <!-- 将 "品名:批次×数量,..." 格式拆分成独立行 -->
+          <template v-for="(seg, idx) in r.in_batch_no.split(',')" :key="idx">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:0.5px solid rgba(0,0,0,.06)">
+              <div>
+                <div style="font-size:13px;font-weight:500">{{ seg.trim().split(':')[0] }}</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:1px">批次 {{ seg.trim().split(':')[1]?.split('×')[0] }}</div>
+              </div>
+              <div style="font-size:13px;font-weight:700;color:var(--red)">−{{ seg.trim().split('×')[1] }}</div>
+            </div>
+          </template>
+          <div style="display:flex;justify-content:space-between;padding-top:6px;font-size:12px;color:var(--text3)">
+            <span>合计消耗</span>
+            <span style="font-weight:700;color:var(--red)">−{{ r.in_qty }}</span>
+          </div>
         </div>
         <div style="text-align:center;font-size:16px;color:var(--text3);padding:2px 0"><i class="ti ti-arrow-down" /></div>
         <div style="background:var(--purple-light);border-radius:var(--radius-sm);padding:4px 12px;margin-top:6px">
