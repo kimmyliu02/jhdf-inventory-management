@@ -47,7 +47,7 @@ function fmtDate(d) {
         <div style="background:var(--teal-light);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:6px">
           <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.04em;margin-bottom:6px">原料消耗</div>
           <!-- 将 "品名:批次×数量,..." 格式拆分成独立行 -->
-          <template v-for="(seg, idx) in r.in_batch_no.split(',')" :key="idx">
+          <template v-for="(seg, idx) in r.in_batch_no.split('，')" :key="idx">
             <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:0.5px solid rgba(0,0,0,.06)">
               <div>
                 <div style="font-size:13px;font-weight:500">{{ seg.trim().split(':')[0] }}</div>
